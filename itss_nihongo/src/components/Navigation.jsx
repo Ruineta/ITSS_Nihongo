@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React from "react";
 
-const NavBar = ({currentTab, onTabChange}) => {
+const Navigation = ({currentTab, onTabChange}) => {
     const navItems = [
         'スライド検索',
         'アップロード',
@@ -28,4 +28,4 @@ const NavBar = ({currentTab, onTabChange}) => {
     );
 };
 
-export default NavBar;
+export default Navigation;

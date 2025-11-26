@@ -1,5 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
+import ExpShare from './pages/ExperienceShare';
+import {Route, Routes} from "react-router-dom";
 
 function App() {
   return (
@@ -19,7 +21,7 @@ function App() {
         </a>
       </header>
       <Routes>
-        <Route path='/exp-share' element={<ExperienceShare/>}/>
+        <Route path='/exp-share' element={<ExpShare/>}/>
       </Routes>
     </div>
   );
