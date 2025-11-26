@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 
 const Header = ({ onLogout }) => {
     const handleLogout = () => {
@@ -23,4 +23,5 @@ const Header = ({ onLogout }) => {
         </header>
     );
 };
+
 export default Header;

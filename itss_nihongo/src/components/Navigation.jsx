@@ -1,6 +1,6 @@
-import React from "react";
+import React, {useState} from "react";
 
-const Navigation = ({currentTab, onTabChange}) => {
+const NavBar = ({currentTab, onTabChange}) => {
     const navItems = [
         'スライド検索',
         'アップロード',
@@ -11,15 +11,15 @@ const Navigation = ({currentTab, onTabChange}) => {
     ];
 
     return(
-    <nav className="bg-gray-200 px-10 flex gap-1">
+    <nav className="bg-gray-200 px-10 flex justify-center gap-0">
         {navItems.map((item, index) => (
             <div
               key = {index}
               onClick={() => onTabChange(item)}
-              className={`px-6 py-4 cursor-pointer transition-all rounded-t-lg text-sm ${
-                  activeTab === item
-                    ? 'bg-white font-semibold'
-                    : 'hover:bg-white/50'    
+              className={`px-8 py-3 cursor-pointer transition-all text-sm ${
+                  currentTab === item
+                    ? 'bg-white font-medium text-gray-900'
+                    : 'text-gray-600 hover:bg-gray-300'    
               }`}
               >{item}
             </div>
@@ -28,4 +28,4 @@ const Navigation = ({currentTab, onTabChange}) => {
     );
 };
 
-export default Navigation;
+export default NavBar;
