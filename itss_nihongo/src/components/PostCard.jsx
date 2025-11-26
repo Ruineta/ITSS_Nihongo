@@ -25,7 +25,7 @@ const PostCard = ({post}) => {
                     </div>
                 </div>
                 <span
-                    onClick={handleBookmark}
+                    /*onClick={handleBookmark}*/
                     className="cursor-pointer text-xl ml-2 hover:scale-110 transition-transform"
                 >
           {isBookmarked ? '📌' : '🔖'}
@@ -49,7 +49,7 @@ const PostCard = ({post}) => {
 
             <div className="flex items-center gap-5 text-gray-600 text-sm">
                 <div
-                    onClick={handleLike}
+                    /*onClick={handleLike}*/
                     className={`flex items-center gap-2 cursor-pointer transition-colors ${
                         isLiked ? 'text-blue-500' : 'hover:text-blue-500'
                     }`}

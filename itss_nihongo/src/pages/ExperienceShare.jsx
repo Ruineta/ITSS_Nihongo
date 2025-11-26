@@ -21,16 +21,16 @@ const ExpShare = () => {
     return(
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
-            <Header onLogout={handleLogout} />
+            <Header /*onLogout={handleLogout}*/ />
 
             {/* Navigation */}
-            <Navigation activeTab={activeTab} onTabChange={setCurrentTab(1)} />
+            <Navigation activeTab={currentTab} onTabChange={setCurrentTab(1)} />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
                 <div className="mb-8">
                     <button
-                        onClick={handleAddPost}
+                        /*onClick={handleAddPost}*/
                         className="float-right bg-gray-900 text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors"
                     >
                         + ノウハウを投稿
