@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import Header from '../components/Header';
-import NavBar from '../components/NavBar';
 import PostCard from '../components/PostCard';
+import Navigation from "../components/Navigation";
 
 const ExpShare = () => {
     const[activeTab, setActiveTab] = useState('教師ノウハウ共有');
@@ -93,7 +93,7 @@ const ExpShare = () => {
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <NavBar currentTab={activeTab} onTabChange={setActiveTab} />
+            <Navigation currentTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
