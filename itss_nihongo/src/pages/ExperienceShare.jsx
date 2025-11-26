@@ -1,17 +1,20 @@
 import React, {useState} from "react";
+import PostCard from "../components/PostCard";
+import Header from "../components/Header"
+import Navigation from "../components/Navigation";
 
 const ExpShare = () => {
-    const[curentTab, setCurrentTab] = useState('教師ノウハウ共有');
+    const[currentTab, setCurrentTab] = useState('教師ノウハウ共有');
 
-    // const posts = [{
-    //     avatar:,
-    //     title:,
-    //     university:,
-    //     content:,
-    //     tags:,
-    //     likes:,
-    //     comments:,
-    // }]
+    const posts = [{
+        avatar: null,
+        title: null,
+        university: null,
+        content: null,
+        tags: null,
+        likes: null,
+        comments:null,
+    }]
 
     //Code handle post ở đây
 
@@ -21,7 +24,7 @@ const ExpShare = () => {
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+            <Navigation activeTab={activeTab} onTabChange={setCurrentTab(1)} />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
@@ -46,5 +49,5 @@ const ExpShare = () => {
             </div>
         </div>
     );
-    )
 }
+export default ExpShare;
