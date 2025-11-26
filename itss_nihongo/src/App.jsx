@@ -18,6 +18,9 @@ function App() {
           Learn React
         </a>
       </header>
+      <Routes>
+        <Route path='/exp-share' element={<ExperienceShare/>}/>
+      </Routes>
     </div>
   );
 }
