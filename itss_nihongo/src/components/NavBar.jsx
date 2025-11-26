@@ -17,7 +17,7 @@ const NavBar = ({currentTab, onTabChange}) => {
               key = {index}
               onClick={() => onTabChange(item)}
               className={`px-6 py-4 cursor-pointer transition-all rounded-t-lg text-sm ${
-                  activeTab === item
+                  currentTab === item
                     ? 'bg-white font-semibold'
                     : 'hover:bg-white/50'    
               }`}

@@ -23,3 +23,5 @@ const Header = ({ onLogout }) => {
         </header>
     );
 };
+
+export default Header;

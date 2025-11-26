@@ -6,10 +6,21 @@ const PostCard = ({post}) => {
     const [isBookmarked, setIsBookmarked] = useState(false);
 
     //Code logic handlelike ở đây
-    //const handleLike
+    const handleLike = () => {
+        if (isLiked) {
+            setLikes(likes - 1);
+            setIsLiked(false);
+        } else {
+            setLikes(likes + 1);
+            setIsLiked(true);
+        }
+    };
 
     //Code logic handleBookmark ở đây
-    //const handleBookmark
+    const handleBookmark = () => {
+        setIsBookmarked(!isBookmarked);
+    };
+
     return(
         <div className="bg-white rounded-xl p-8 mb-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-start mb-5">
