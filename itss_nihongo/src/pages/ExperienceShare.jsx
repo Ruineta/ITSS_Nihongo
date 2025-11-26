@@ -1,27 +1,35 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
+import Header from "../components/Header";
+import NavBar from "../components/NavBar";
+import PostCard from "../components/PostCard";
+import PostFormModal from "../components/PostFormModal";
 
-const ExpShare = () => {
-    const[curentTab, setCurrentTab] = useState('教師ノウハウ共有');
+const ExperienceShare = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [posts, setPosts] = useState([]);
 
-    // const posts = [{
-    //     avatar:,
-    //     title:,
-    //     university:,
-    //     content:,
-    //     tags:,
-    //     likes:,
-    //     comments:,
-    // }]
+    const handleLogout = () => {
+        alert('ログアウトしました');
+        // ログアウト処理をここに実装
+    };
 
-    //Code handle post ở đây
+    const handleAddPost = () => {
+        setIsModalOpen(true);
+    };
 
-    return(
+    const handleFormSubmit = (newPost) => {
+        setPosts(prev => [newPost, ...prev]);
+        setIsModalOpen(false);
+        alert('投稿しました！');
+    };
+
+    return (
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+            <NavBar />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
@@ -44,7 +52,15 @@ const ExpShare = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Post Form Modal */}
+            <PostFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleFormSubmit}
+            />
         </div>
     );
-    )
-}
+};
+
+export default ExperienceShare;
