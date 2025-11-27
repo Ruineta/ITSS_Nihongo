@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Header from "../components/Header";
-import NavBar from "../components/NavBar";
+import Navigation from "../components/Navigation";
 import PostCard from "../components/PostCard";
 import PostFormModal from "../components/PostFormModal";
 
@@ -29,7 +29,7 @@ const ExperienceShare = () => {
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <NavBar />
+            <Navigation />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">

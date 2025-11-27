@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Header from "../components/Header";
-import NavBar from "../components/NavBar";
+import Navigation from "../components/Navigation";
 
 const UploadSlide = () => {
     const [dragActive, setDragActive] = useState(false);
@@ -79,7 +79,7 @@ const UploadSlide = () => {
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <NavBar />
+            <Navigation />
 
             {/* Main Content */}
             <div className="max-w-4xl mx-auto px-5 py-10">

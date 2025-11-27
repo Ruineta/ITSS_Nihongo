@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const NavBar = () => {
+const Navigation = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -61,4 +61,4 @@ const NavBar = () => {
     );
 };
 
-export default NavBar;
+export default Navigation;
