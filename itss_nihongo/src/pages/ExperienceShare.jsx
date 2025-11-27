@@ -104,8 +104,8 @@ const ExpShare = () => {
                     >
                         + ノウハウを投稿
                     </button>
-                    <h1 className="text-3xl font-semibold mb-2">教師ノウハウ共有</h1>
-                    <p className="text-gray-600 text-base">
+                    <h1 className="text-3xl text-left font-semibold mb-2">教師ノウハウ共有</h1>
+                    <p className="text-gray-600 text-left text-base">
                         実践的な教育方法やヒントを共有しましょう
                     </p>
                 </div>
@@ -135,7 +135,7 @@ const ExpShare = () => {
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium mb-2">投稿者名</label>
                                 <input
                                     type="text"
@@ -144,7 +144,7 @@ const ExpShare = () => {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                     placeholder="あなたの名前"
                                 />
-                            </div>
+                            </div> */}
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">大学名</label>
