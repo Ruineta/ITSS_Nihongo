@@ -1,28 +1,22 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import './App.css';
-import ExperienceShare from './pages/ExperienceShare';
+import ExpShare from './pages/ExperienceShare';
 import UploadSlide from './pages/UploadSlide';
 
-function App() {
-  return (
-    <Router>
-import './App.css';
-import { Routes, Route } from 'react-router-dom';
-import ExperienceShare from './pages/ExperienceShare';
 
 function App() {
   return (
     <div className="App">
       <Routes>
-        <Route path='/' element={<ExperienceShare/>}/>
-        <Route path='/exp-share' element={<ExperienceShare/>}/>
+        <Route path='/' element={<ExpShare/>}/>
+        <Route path='/exp-share' element={<ExpShare/>}/>
         <Route path='/upload' element={<UploadSlide/>}/>
-        <Route path='/search' element={<ExperienceShare/>}/>
-        <Route path='/discussion' element={<ExperienceShare/>}/>
-        <Route path='/ranking' element={<ExperienceShare/>}/>
-        <Route path='/profile' element={<ExperienceShare/>}/>
+        <Route path='/search' element={<ExpShare/>}/>
+        <Route path='/discussion' element={<ExpShare/>}/>
+        <Route path='/ranking' element={<ExpShare/>}/>
+        <Route path='/profile' element={<ExpShare/>}/>
       </Routes>
-    </Router>
+    </div>
   );
 }
 

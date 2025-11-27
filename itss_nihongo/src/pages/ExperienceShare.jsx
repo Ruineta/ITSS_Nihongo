@@ -4,17 +4,11 @@ import Navigation from "../components/Navigation";
 import PostCard from "../components/PostCard";
 import PostFormModal from "../components/PostFormModal";
 
-const ExperienceShare = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [posts, setPosts] = useState([]);
-import React, {useState} from "react";
-import Header from '../components/Header';
-import PostCard from '../components/PostCard';
-import Navigation from "../components/Navigation";
-
 const ExpShare = () => {
     const[activeTab, setActiveTab] = useState('教師ノウハウ共有');
     const[showAddPostModal, setShowAddPostModal] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [posts, setPosts] = useState([]);
     const[newPostData, setNewPostData] = useState({
         title: '',
         author: '',
@@ -23,23 +17,6 @@ const ExpShare = () => {
         tags: ''
     });
 
-    const handleLogout = () => {
-        alert('ログアウトしました');
-        // ログアウト処理をここに実装
-    };
-
-    const handleAddPost = () => {
-        setIsModalOpen(true);
-    const [posts, setPosts] = useState([{
-        avatar: 'T',
-        title: 'オンライン授業の効果的な方法',
-        author: '田中先生',
-        university: '東京大学',
-        content: 'オンライン授業を効果的に進めるためのポイントを共有します。学生とのコミュニケーションを重視することが重要です。',
-        tags: ['オンライン', '教育方法', 'コミュニケーション'],
-        likes: 24,
-        comments: 5,
-    }]);
 
     //Code handle post ở đây
     const handleLogout = () => {
@@ -135,11 +112,7 @@ const ExpShare = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleFormSubmit}
             />
-        </div>
-    );
-};
 
-export default ExperienceShare;
             {/* Add Post Modal */}
             {showAddPostModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -221,7 +194,6 @@ export default ExperienceShare;
             )}
         </div>
     );
-    
-}
+};
 
 export default ExpShare;
