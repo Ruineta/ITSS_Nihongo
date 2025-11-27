@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, { useState } from "react";
 
-const PostCard = ({post}) => {
+const PostCard = ({ post }) => {
     const [likes, setLikes] = useState(post.likes);
     const [isLiked, setIsLiked] = useState(false);
     const [isBookmarked, setIsBookmarked] = useState(false);

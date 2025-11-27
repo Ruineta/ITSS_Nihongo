@@ -1,3 +1,12 @@
+import React, { useState } from "react";
+import Header from "../components/Header";
+import Navigation from "../components/Navigation";
+import PostCard from "../components/PostCard";
+import PostFormModal from "../components/PostFormModal";
+
+const ExperienceShare = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [posts, setPosts] = useState([]);
 import React, {useState} from "react";
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
@@ -14,16 +23,13 @@ const ExpShare = () => {
         tags: ''
     });
 
-    // const posts = [{
-    //     avatar:,
-    //     title:,
-    //     university:,
-    //     content:,
-    //     tags:,
-    //     likes:,
-    //     comments:,
-    // }]
+    const handleLogout = () => {
+        alert('ログアウトしました');
+        // ログアウト処理をここに実装
+    };
 
+    const handleAddPost = () => {
+        setIsModalOpen(true);
     const [posts, setPosts] = useState([{
         avatar: 'T',
         title: 'オンライン授業の効果的な方法',
@@ -87,13 +93,19 @@ const ExpShare = () => {
         setNewPostData({...newPostData, [field]: value});
     };
 
-    return(
+    const handleFormSubmit = (newPost) => {
+        setPosts(prev => [newPost, ...prev]);
+        setIsModalOpen(false);
+        alert('投稿しました！');
+    };
+
+    return (
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <Navigation currentTab={activeTab} onTabChange={setActiveTab} />
+            <Navigation />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
@@ -117,6 +129,17 @@ const ExpShare = () => {
                 </div>
             </div>
 
+            {/* Post Form Modal */}
+            <PostFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleFormSubmit}
+            />
+        </div>
+    );
+};
+
+export default ExperienceShare;
             {/* Add Post Modal */}
             {showAddPostModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
