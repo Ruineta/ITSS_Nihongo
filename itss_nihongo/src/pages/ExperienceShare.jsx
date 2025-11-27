@@ -1,14 +1,11 @@
-import React, { useState } from "react";
-import Header from "../components/Header";
+import React, {useState} from "react";
+import Header from '../components/Header';
+import PostCard from '../components/PostCard';
 import Navigation from "../components/Navigation";
-import PostCard from "../components/PostCard";
-import PostFormModal from "../components/PostFormModal";
 
 const ExpShare = () => {
     const[activeTab, setActiveTab] = useState('教師ノウハウ共有');
     const[showAddPostModal, setShowAddPostModal] = useState(false);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [posts, setPosts] = useState([]);
     const[newPostData, setNewPostData] = useState({
         title: '',
         author: '',
@@ -17,6 +14,26 @@ const ExpShare = () => {
         tags: ''
     });
 
+    // const posts = [{
+    //     avatar:,
+    //     title:,
+    //     university:,
+    //     content:,
+    //     tags:,
+    //     likes:,
+    //     comments:,
+    // }]
+
+    const [posts, setPosts] = useState([{
+        avatar: 'T',
+        title: 'オンライン授業の効果的な方法',
+        author: '田中先生',
+        university: '東京大学',
+        content: 'オンライン授業を効果的に進めるためのポイントを共有します。学生とのコミュニケーションを重視することが重要です。',
+        tags: ['オンライン', '教育方法', 'コミュニケーション'],
+        likes: 24,
+        comments: 5,
+    }]);
 
     //Code handle post ở đây
     const handleLogout = () => {
@@ -70,19 +87,13 @@ const ExpShare = () => {
         setNewPostData({...newPostData, [field]: value});
     };
 
-    const handleFormSubmit = (newPost) => {
-        setPosts(prev => [newPost, ...prev]);
-        setIsModalOpen(false);
-        alert('投稿しました！');
-    };
-
-    return (
+    return(
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <Header onLogout={handleLogout} />
 
             {/* Navigation */}
-            <Navigation />
+            <Navigation currentTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-5 py-10">
@@ -93,8 +104,8 @@ const ExpShare = () => {
                     >
                         + ノウハウを投稿
                     </button>
-                    <h1 className="text-3xl font-semibold mb-2">教師ノウハウ共有</h1>
-                    <p className="text-gray-600 text-base">
+                    <h1 className="text-3xl text-left font-semibold mb-2">教師ノウハウ共有</h1>
+                    <p className="text-gray-600 text-left text-base">
                         実践的な教育方法やヒントを共有しましょう
                     </p>
                 </div>
@@ -105,13 +116,6 @@ const ExpShare = () => {
                     ))}
                 </div>
             </div>
-
-            {/* Post Form Modal */}
-            <PostFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSubmit={handleFormSubmit}
-            />
 
             {/* Add Post Modal */}
             {showAddPostModal && (
@@ -131,7 +135,7 @@ const ExpShare = () => {
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label className="block text-sm font-medium mb-2">投稿者名</label>
                                 <input
                                     type="text"
@@ -140,7 +144,7 @@ const ExpShare = () => {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
                                     placeholder="あなたの名前"
                                 />
-                            </div>
+                            </div> */}
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">大学名</label>
@@ -194,6 +198,7 @@ const ExpShare = () => {
             )}
         </div>
     );
-};
+    
+}
 
 export default ExpShare;

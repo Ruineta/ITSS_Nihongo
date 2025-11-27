@@ -32,7 +32,7 @@ const PostCard = ({ post }) => {
                         <div className="text-base font-semibold mb-0.5 text-gray-900">
                             {post.title}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-left text-gray-500">
                             {post.author} • {post.university}
                         </div>
                     </div>
@@ -45,7 +45,7 @@ const PostCard = ({ post }) => {
                 </span>
             </div>
 
-            <div className="text-sm leading-relaxed text-gray-700 mb-4">
+            <div className="text-sm leading-relaxed text-left text-gray-700 mb-4">
                 {post.content}
             </div>
 
