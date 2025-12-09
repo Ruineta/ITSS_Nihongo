@@ -1,7 +1,10 @@
 -- Sample data for testing the difficulty ranking API
 -- Run this script after initializing the database with PostgreSQL_init.sql
 
--- Insert sample subjects
+-- Use a transaction to ensure all-or-nothing insertion
+BEGIN;
+
+-- Insert sample subjects and capture IDs
 INSERT INTO subjects (name) VALUES 
   ('物理'),
   ('数学'),
@@ -10,7 +13,7 @@ INSERT INTO subjects (name) VALUES
   ('生物')
 ON CONFLICT (name) DO NOTHING;
 
--- Insert sample users (teachers)
+-- Insert sample users (teachers) and capture IDs
 INSERT INTO users (email, password_hash, full_name, school_name, specialization, years_of_experience) VALUES 
   ('suzuki@example.com', '$2b$10$dummyhash1', '鈴木先生', '東京大学', '物理学', 15),
   ('tanaka@example.com', '$2b$10$dummyhash2', '田中先生', '京都大学', '数学', 10),
@@ -18,20 +21,59 @@ INSERT INTO users (email, password_hash, full_name, school_name, specialization,
   ('sato@example.com', '$2b$10$dummyhash4', '佐藤先生', '名古屋大学', '化学', 12)
 ON CONFLICT (email) DO NOTHING;
 
--- Insert sample slides with varying difficulty scores
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
-  (1, 1, '量子力学の基礎：波動関数', '量子力学における波動関数の基本概念を解説', 'https://example.com/slides/quantum-basics.pdf', 'pdf', '上級', 95, 45, true),
-  (1, 1, '相対性理論入門', 'アインシュタインの特殊相対性理論の基礎', 'https://example.com/slides/relativity.pptx', 'pptx', '上級', 88, 62, true),
-  (2, 2, '微積分の応用：最適化問題', '実世界の最適化問題における微積分の応用', 'https://example.com/slides/calculus-optimization.pdf', 'pdf', '中級', 72, 123, true),
-  (2, 2, 'フーリエ変換の基礎', '信号処理におけるフーリエ変換の理論と実践', 'https://example.com/slides/fourier.pdf', 'pdf', '上級', 85, 89, true),
-  (3, 3, 'N1レベルの敬語表現', '日本語能力試験N1レベルの敬語の使い分け', 'https://example.com/slides/keigo-n1.pptx', 'pptx', 'N1', 78, 156, true),
-  (3, 3, '古典文法の基礎', '古文における文法事項の基本', 'https://example.com/slides/kobun-grammar.pdf', 'pdf', '中級', 65, 98, true),
-  (4, 4, '有機化学反応機構', '有機化合物の反応メカニズムの詳細', 'https://example.com/slides/organic-mechanisms.pdf', 'pdf', '上級', 90, 71, true),
-  (4, 4, '化学平衡の理論', '平衡定数と反応の進行方向', 'https://example.com/slides/equilibrium.pptx', 'pptx', '中級', 68, 134, true),
-  (1, 1, '電磁気学の基本法則', 'マクスウェル方程式の導出と応用', 'https://example.com/slides/electromagnetism.pdf', 'pdf', '上級', 82, 105, true),
-  (2, 2, '線形代数：固有値問題', '行列の固有値と固有ベクトルの応用', 'https://example.com/slides/eigenvalues.pdf', 'pdf', '中級', 75, 142, true);
+-- Insert sample slides with varying difficulty scores using subqueries for IDs
+DO $$
+DECLARE
+  suzuki_id INT;
+  tanaka_id INT;
+  yamada_id INT;
+  sato_id INT;
+  physics_id INT;
+  math_id INT;
+  japanese_id INT;
+  chemistry_id INT;
+BEGIN
+  -- Get user IDs
+  SELECT id INTO suzuki_id FROM users WHERE email = 'suzuki@example.com';
+  SELECT id INTO tanaka_id FROM users WHERE email = 'tanaka@example.com';
+  SELECT id INTO yamada_id FROM users WHERE email = 'yamada@example.com';
+  SELECT id INTO sato_id FROM users WHERE email = 'sato@example.com';
+  
+  -- Get subject IDs
+  SELECT id INTO physics_id FROM subjects WHERE name = '物理';
+  SELECT id INTO math_id FROM subjects WHERE name = '数学';
+  SELECT id INTO japanese_id FROM subjects WHERE name = '日本語教育';
+  SELECT id INTO chemistry_id FROM subjects WHERE name = '化学';
+  
+  -- Insert slides only if user and subject IDs are found
+  IF suzuki_id IS NOT NULL AND physics_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (suzuki_id, physics_id, '量子力学の基礎：波動関数', '量子力学における波動関数の基本概念を解説', 'https://example.com/slides/quantum-basics.pdf', 'pdf', '上級', 95, 45, true),
+      (suzuki_id, physics_id, '相対性理論入門', 'アインシュタインの特殊相対性理論の基礎', 'https://example.com/slides/relativity.pptx', 'pptx', '上級', 88, 62, true),
+      (suzuki_id, physics_id, '電磁気学の基本法則', 'マクスウェル方程式の導出と応用', 'https://example.com/slides/electromagnetism.pdf', 'pdf', '上級', 82, 105, true);
+  END IF;
+  
+  IF tanaka_id IS NOT NULL AND math_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (tanaka_id, math_id, '微積分の応用：最適化問題', '実世界の最適化問題における微積分の応用', 'https://example.com/slides/calculus-optimization.pdf', 'pdf', '中級', 72, 123, true),
+      (tanaka_id, math_id, 'フーリエ変換の基礎', '信号処理におけるフーリエ変換の理論と実践', 'https://example.com/slides/fourier.pdf', 'pdf', '上級', 85, 89, true),
+      (tanaka_id, math_id, '線形代数：固有値問題', '行列の固有値と固有ベクトルの応用', 'https://example.com/slides/eigenvalues.pdf', 'pdf', '中級', 75, 142, true);
+  END IF;
+  
+  IF yamada_id IS NOT NULL AND japanese_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (yamada_id, japanese_id, 'N1レベルの敬語表現', '日本語能力試験N1レベルの敬語の使い分け', 'https://example.com/slides/keigo-n1.pptx', 'pptx', 'N1', 78, 156, true),
+      (yamada_id, japanese_id, '古典文法の基礎', '古文における文法事項の基本', 'https://example.com/slides/kobun-grammar.pdf', 'pdf', '中級', 65, 98, true);
+  END IF;
+  
+  IF sato_id IS NOT NULL AND chemistry_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (sato_id, chemistry_id, '有機化学反応機構', '有機化合物の反応メカニズムの詳細', 'https://example.com/slides/organic-mechanisms.pdf', 'pdf', '上級', 90, 71, true),
+      (sato_id, chemistry_id, '化学平衡の理論', '平衡定数と反応の進行方向', 'https://example.com/slides/equilibrium.pptx', 'pptx', '中級', 68, 134, true);
+  END IF;
+END $$;
 
--- Get the slide IDs for inserting difficulty analysis points
+-- Insert difficulty analysis points using slide titles to find IDs
 DO $$
 DECLARE
   slide_id_var INT;
@@ -103,6 +145,9 @@ BEGIN
       (slide_id_var, '制約条件の設定');
   END IF;
 END $$;
+
+-- Commit the transaction
+COMMIT;
 
 -- Verify the data
 SELECT 
