@@ -5,100 +5,7 @@ import SearchFilter from '../components/SearchFilter';
 import SlideCard from '../components/SlideCard';
 import SlideDetailModal from '../components/SlideDetailModal';
 import useDebounce from '../hooks/useDebounce';
-
-// Mock data - Di chuyển ra ngoài component để tránh re-create
-const MOCK_SLIDES = [
-    {
-        id: 1,
-        thumbnail: 'https://via.placeholder.com/400x300/4A90E2/ffffff?text=Math+Slide',
-        title: '四則分の基礎：線形篇',
-        author: '山田先生',
-        university: '東京大学',
-        uploadDate: '2024年12月1日',
-        tags: ['料目', 'やさしい日本語', '初級'],
-        views: 12,
-        difficulty: '初級',
-        description: 'この資料は、数学の基礎である四則演算について詳しく解説しています。初学者向けに分かりやすく説明されており、例題も豊富に含まれています。',
-        fileSize: '2.3 MB',
-        pageCount: 24,
-        downloadCount: 156
-    },
-    {
-        id: 2,
-        thumbnail: 'https://via.placeholder.com/400x300/50C878/ffffff?text=History+Slide',
-        title: '日本の歴史：江戸時代',
-        author: '田中先生',
-        university: '京都大学',
-        uploadDate: '2024年11月28日',
-        tags: ['歴史', '文化', '中級'],
-        views: 8,
-        difficulty: '中級',
-        description: '江戸時代の政治、経済、文化について包括的に学べるスライドです。豊富な資料と図解で理解を深めることができます。',
-        fileSize: '3.1 MB',
-        pageCount: 35,
-        downloadCount: 89
-    },
-    {
-        id: 3,
-        thumbnail: 'https://via.placeholder.com/400x300/FF6B6B/ffffff?text=Chemistry+Slide',
-        title: '化学反応の基礎',
-        author: '佐藤先生',
-        university: '大阪大学',
-        uploadDate: '2024年11月25日',
-        tags: ['化学', '実験', '上級'],
-        views: 1250,
-        difficulty: '上級',
-        description: '化学反応の基本原理から応用まで、実験例を交えながら詳しく解説します。大学レベルの内容を含みます。',
-        fileSize: '4.5 MB',
-        pageCount: 42,
-        downloadCount: 523
-    },
-    {
-        id: 4,
-        thumbnail: 'https://via.placeholder.com/400x300/9B59B6/ffffff?text=Japanese+Language',
-        title: 'やさしい日本語入門',
-        author: '鈴木先生',
-        university: '早稲田大学',
-        uploadDate: '2024年11月20日',
-        tags: ['やさしい日本語', '初級', 'コミュニケーション'],
-        views: 2340,
-        difficulty: '初級',
-        description: '日本語学習の初心者向けに、日常会話でよく使われる表現を「やさしい日本語」で説明しています。',
-        fileSize: '1.8 MB',
-        pageCount: 18,
-        downloadCount: 1234
-    },
-    {
-        id: 5,
-        thumbnail: 'https://via.placeholder.com/400x300/F39C12/ffffff?text=Physics+Slide',
-        title: '物理学：運動の法則',
-        author: '高橋先生',
-        university: '名古屋大学',
-        uploadDate: '2024年11月18日',
-        tags: ['物理', '中級', '力学'],
-        views: 567,
-        difficulty: '中級',
-        description: 'ニュートンの運動法則を中心に、物理学の基礎となる力学について学びます。実例を交えた分かりやすい解説です。',
-        fileSize: '2.9 MB',
-        pageCount: 28,
-        downloadCount: 234
-    },
-    {
-        id: 6,
-        thumbnail: 'https://via.placeholder.com/400x300/1ABC9C/ffffff?text=Biology+Slide',
-        title: '生物：細胞の構造',
-        author: '伊藤先生',
-        university: '北海道大学',
-        uploadDate: '2024年11月15日',
-        tags: ['生物', '初級', '細胞'],
-        views: 890,
-        difficulty: '初級',
-        description: '細胞の基本構造から機能まで、図解を用いて分かりやすく説明します。生物学の基礎を学ぶのに最適です。',
-        fileSize: '3.2 MB',
-        pageCount: 30,
-        downloadCount: 445
-    }
-];
+import { searchSlides } from '../services/slideService';
 
 const SlideSearch = () => {
     // State management
@@ -146,54 +53,32 @@ const SlideSearch = () => {
         setTimeout(() => setSelectedSlide(null), 300);
     };
 
-    // Fetch slides (mock API call)
+    // Fetch slides (API call)
     const fetchSlides = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Call real API
+            const result = await searchSlides({
+                keyword: debouncedSearchKeyword,
+                subject: filters.subject,
+                difficulty: filters.difficulty,
+                year: filters.year,
+                page: 1,
+                limit: 50 // Get more results for initial load
+            });
 
-            // Filter slides based on search and filters
-            let filteredSlides = [...MOCK_SLIDES];
-
-            // Filter by keyword
-            if (debouncedSearchKeyword) {
-                const keyword = debouncedSearchKeyword.toLowerCase();
-                filteredSlides = filteredSlides.filter(slide =>
-                    slide.title.toLowerCase().includes(keyword) ||
-                    slide.author.toLowerCase().includes(keyword) ||
-                    slide.tags.some(tag => tag.toLowerCase().includes(keyword))
-                );
+            if (result.success) {
+                setSlides(result.data);
+                setTotalResults(result.total);
+            } else {
+                throw new Error(result.message || 'データの取得に失敗しました');
             }
-
-            // Filter by subject (nếu không phải "全て")
-            if (filters.subject !== '全て') {
-                filteredSlides = filteredSlides.filter(slide =>
-                    slide.tags.includes(filters.subject)
-                );
-            }
-
-            // Filter by difficulty
-            if (filters.difficulty !== '明易い順') {
-                filteredSlides = filteredSlides.filter(slide =>
-                    slide.difficulty === filters.difficulty
-                );
-            }
-
-            // Sort by difficulty if needed
-            if (filters.difficulty === '明易い順') {
-                const difficultyOrder = { '初級': 1, '中級': 2, '上級': 3 };
-                filteredSlides.sort((a, b) => 
-                    difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]
-                );
-            }
-
-            setSlides(filteredSlides);
-            setTotalResults(filteredSlides.length);
+            
             setIsLoading(false);
         } catch (err) {
+            console.error('Fetch error:', err);
             setError('データの取得に失敗しました。もう一度お試しください。');
             setIsLoading(false);
         }
@@ -206,19 +91,20 @@ const SlideSearch = () => {
 
     // Loading skeleton component
     const LoadingSkeleton = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-4">
             {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-                    <div className="w-full h-48 bg-gray-300"></div>
-                    <div className="p-4">
-                        <div className="h-6 bg-gray-300 rounded mb-2"></div>
-                        <div className="h-4 bg-gray-300 rounded w-3/4 mb-3"></div>
-                        <div className="flex gap-2">
-                            <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                            <div className="flex-1">
-                                <div className="h-3 bg-gray-300 rounded mb-1"></div>
-                                <div className="h-3 bg-gray-300 rounded w-2/3"></div>
-                            </div>
+                <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse flex">
+                    <div className="w-32 h-32 bg-gray-300 flex-shrink-0"></div>
+                    <div className="p-4 flex-1">
+                        <div className="h-5 bg-gray-300 rounded mb-2 w-3/4"></div>
+                        <div className="mb-3">
+                            <div className="h-3 bg-gray-300 rounded mb-1 w-1/4"></div>
+                            <div className="h-3 bg-gray-300 rounded w-1/5"></div>
+                        </div>
+                        <div className="flex gap-2 mb-2">
+                            <div className="h-6 bg-gray-300 rounded w-16"></div>
+                            <div className="h-6 bg-gray-300 rounded w-16"></div>
+                            <div className="h-6 bg-gray-300 rounded w-16"></div>
                         </div>
                     </div>
                 </div>
@@ -311,12 +197,12 @@ const SlideSearch = () => {
                     </div>
                 )}
 
-                {/* Slides Grid */}
+                {/* Slides List */}
                 {isLoading && <LoadingSkeleton />}
                 {!isLoading && error && <ErrorState />}
                 {!isLoading && !error && slides.length === 0 && <EmptyState />}
                 {!isLoading && !error && slides.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="flex flex-col gap-4">
                         {slides.map((slide) => (
                             <SlideCard 
                                 key={slide.id} 

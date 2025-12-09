@@ -42,7 +42,7 @@ const SearchFilter = ({ onSearch, onFilterChange }) => {
 
     // Popular tags
     const popularTags = [
-        '料目',
+        '科目',
         '中級',
         'やさしい日本語',
         '文化',
@@ -103,45 +103,61 @@ const SearchFilter = ({ onSearch, onFilterChange }) => {
                 キーワード、科目、難易度などで絞り込めます
             </p>
 
-            {/* Search input */}
+            {/* Search input with button */}
             <div className="mb-4">
-                <div className="relative">
-                    <input
-                        type="text"
-                        value={keyword}
-                        onChange={handleKeywordChange}
-                        placeholder="キーワードで検索..."
-                        className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <svg 
-                            className="w-5 h-5" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                        >
-                            <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth={2} 
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
-                            />
-                        </svg>
+                <div className="flex gap-3">
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            value={keyword}
+                            onChange={handleKeywordChange}
+                            placeholder="キーワードで検索..."
+                            className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100"
+                        />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                            <svg 
+                                className="w-5 h-5" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    strokeWidth={2} 
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                                />
+                            </svg>
+                        </div>
                     </div>
+                    <button
+                        onClick={() => {
+                            if (onFilterChange) {
+                                onFilterChange({
+                                    subject: selectedSubject,
+                                    year: selectedYear,
+                                    difficulty: selectedDifficulty
+                                });
+                            }
+                        }}
+                        className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium whitespace-nowrap"
+                    >
+                        検索
+                    </button>
                 </div>
             </div>
 
-            {/* Filter dropdowns với nút search */}
+            {/* Filter dropdowns */}
             <div className="flex flex-col md:flex-row gap-4 mb-4">
                 {/* Subject filter */}
                 <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                         科目
                     </label>
                     <select
                         value={selectedSubject}
                         onChange={(e) => handleFilterChange('subject', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-pointer"
                     >
                         {subjects.map((subject) => (
                             <option key={subject} value={subject}>
@@ -153,13 +169,13 @@ const SearchFilter = ({ onSearch, onFilterChange }) => {
 
                 {/* Difficulty filter */}
                 <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                         難易度
                     </label>
                     <select
                         value={selectedYear}
                         onChange={(e) => handleFilterChange('year', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-pointer"
                     >
                         {years.map((year) => (
                             <option key={year} value={year}>
@@ -171,13 +187,13 @@ const SearchFilter = ({ onSearch, onFilterChange }) => {
 
                 {/* Sort filter */}
                 <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
                         並び替え
                     </label>
                     <select
                         value={selectedDifficulty}
                         onChange={(e) => handleFilterChange('difficulty', e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white cursor-pointer"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-pointer"
                     >
                         {difficulties.map((difficulty) => (
                             <option key={difficulty} value={difficulty}>
@@ -185,24 +201,6 @@ const SearchFilter = ({ onSearch, onFilterChange }) => {
                             </option>
                         ))}
                     </select>
-                </div>
-
-                {/* Search button */}
-                <div className="flex items-end">
-                    <button
-                        onClick={() => {
-                            if (onFilterChange) {
-                                onFilterChange({
-                                    subject: selectedSubject,
-                                    year: selectedYear,
-                                    difficulty: selectedDifficulty
-                                });
-                            }
-                        }}
-                        className="w-full md:w-auto px-8 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
-                    >
-                        検索
-                    </button>
                 </div>
             </div>
 

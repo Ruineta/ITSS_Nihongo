@@ -1,11 +1,12 @@
 // API Service cho Slide Search
-// Đây là file mock API - thay thế bằng real API calls trong production
+// Sử dụng real API calls để kết nối với backend
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 /**
- * Mock data cho development
+ * Mock data cho development (not used - kept for reference)
  */
+// eslint-disable-next-line no-unused-vars
 const mockSlidesData = [
     {
         id: 1,
@@ -103,53 +104,79 @@ const mockSlidesData = [
  * @param {string} params.keyword - Từ khóa tìm kiếm
  * @param {string} params.subject - Môn học
  * @param {string} params.difficulty - Độ khó
- * @param {string} params.year - Năm học
+ * @param {string} params.year - Năm học (format: "YYYY年")
+ * @param {number} params.page - Page number (optional, default: 1)
+ * @param {number} params.limit - Items per page (optional, default: 12)
  * @returns {Promise<Object>} - Kết quả tìm kiếm
  */
-export const searchSlides = async ({ keyword = '', subject = '全て', difficulty = '明易い順', year = '全て' }) => {
+export const searchSlides = async ({ 
+    keyword = '', 
+    subject = '全て', 
+    difficulty = '明易い順', 
+    year = '全て',
+    page = 1,
+    limit = 12
+}) => {
     try {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        // Filter logic (giống như trong SlideSearch.jsx)
-        let filteredSlides = [...mockSlidesData];
-
-        // Filter by keyword
-        if (keyword) {
-            const searchTerm = keyword.toLowerCase();
-            filteredSlides = filteredSlides.filter(slide =>
-                slide.title.toLowerCase().includes(searchTerm) ||
-                slide.author.toLowerCase().includes(searchTerm) ||
-                slide.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-            );
+        // Build query parameters
+        const params = new URLSearchParams();
+        
+        if (keyword && keyword.trim()) {
+            params.append('keyword', keyword.trim());
         }
-
-        // Filter by subject
-        if (subject !== '全て') {
-            filteredSlides = filteredSlides.filter(slide =>
-                slide.tags.includes(subject)
-            );
+        
+        if (subject && subject !== '全て') {
+            params.append('subject', subject);
         }
-
-        // Filter by difficulty
-        if (difficulty !== '明易い順') {
-            filteredSlides = filteredSlides.filter(slide =>
-                slide.difficulty === difficulty
-            );
+        
+        if (difficulty && difficulty !== '明易い順') {
+            params.append('difficulty', difficulty);
         }
-
-        // Sort by difficulty if needed
+        
+        if (year && year !== '全て') {
+            params.append('year', year);
+        }
+        
+        // Determine sort order
+        let sortBy = 'newest';
         if (difficulty === '明易い順') {
-            const difficultyOrder = { '初級': 1, '中級': 2, '上級': 3 };
-            filteredSlides.sort((a, b) => 
-                difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]
-            );
+            sortBy = 'difficulty_asc';
         }
+        params.append('sortBy', sortBy);
+        params.append('page', page);
+        params.append('limit', limit);
+
+        // Make API call
+        const response = await fetch(`${API_BASE_URL}/slides/search?${params}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('データの取得に失敗しました');
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'データの取得に失敗しました');
+        }
+
+        // Transform tags from array of objects to array of strings
+        const transformedData = result.data.map(slide => ({
+            ...slide,
+            tags: Array.isArray(slide.tags) 
+                ? slide.tags.map(tag => typeof tag === 'object' ? tag.name : tag)
+                : []
+        }));
 
         return {
             success: true,
-            data: filteredSlides,
-            total: filteredSlides.length
+            data: transformedData,
+            pagination: result.pagination,
+            total: result.pagination.totalItems
         };
     } catch (error) {
         console.error('Error fetching slides:', error);
@@ -164,17 +191,37 @@ export const searchSlides = async ({ keyword = '', subject = '全て', difficult
  */
 export const getSlideById = async (id) => {
     try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        const slide = mockSlidesData.find(s => s.id === id);
-        
-        if (!slide) {
-            throw new Error('スライドが見つかりません');
+        const response = await fetch(`${API_BASE_URL}/slides/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                throw new Error('スライドが見つかりません');
+            }
+            throw new Error('データの取得に失敗しました');
         }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'データの取得に失敗しました');
+        }
+
+        // Transform tags from array of objects to array of strings
+        const transformedData = {
+            ...result.data,
+            tags: Array.isArray(result.data.tags) 
+                ? result.data.tags.map(tag => typeof tag === 'object' ? tag.name : tag)
+                : []
+        };
 
         return {
             success: true,
-            data: slide
+            data: transformedData
         };
     } catch (error) {
         console.error('Error fetching slide:', error);
@@ -183,41 +230,79 @@ export const getSlideById = async (id) => {
 };
 
 /**
- * Real API call example (comment out mock data and use this in production)
+ * Get available subjects for filtering
+ * @returns {Promise<Object>} - List of subjects
  */
-/*
-export const searchSlides = async ({ keyword = '', subject = '全て', difficulty = '明易い順', year = '全て' }) => {
+export const getSubjects = async () => {
     try {
-        const params = new URLSearchParams({
-            keyword,
-            subject,
-            difficulty,
-            year
-        });
-
-        const response = await fetch(`${API_BASE_URL}/slides/search?${params}`, {
+        const response = await fetch(`${API_BASE_URL}/slides/filters/subjects`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                // Add authorization header if needed
-                // 'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            throw new Error('データの取得に失敗しました');
+            throw new Error('科目の取得に失敗しました');
         }
 
         const result = await response.json();
-        return result;
+        
+        if (!result.success) {
+            throw new Error(result.message || '科目の取得に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data
+        };
     } catch (error) {
-        console.error('Error fetching slides:', error);
+        console.error('Error fetching subjects:', error);
         throw error;
     }
 };
-*/
 
-export default {
-    searchSlides,
-    getSlideById
+/**
+ * Get popular tags
+ * @param {number} limit - Number of tags to return
+ * @returns {Promise<Object>} - List of popular tags
+ */
+export const getPopularTags = async (limit = 20) => {
+    try {
+        const params = new URLSearchParams({ limit: limit.toString() });
+        
+        const response = await fetch(`${API_BASE_URL}/slides/filters/tags?${params}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('タグの取得に失敗しました');
+        }
+
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.message || 'タグの取得に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data
+        };
+    } catch (error) {
+        console.error('Error fetching tags:', error);
+        throw error;
+    }
 };
+
+const slideService = {
+    searchSlides,
+    getSlideById,
+    getSubjects,
+    getPopularTags
+};
+
+export default slideService;
