@@ -4,6 +4,7 @@ import ExpShare from './pages/ExperienceShare';
 import UploadSlide from './pages/UploadSlide';
 import SlideRanking from "./pages/SlideRanking";
 import SlideSearch from './pages/SlideSearch';
+import SlideDiscussion from './pages/SlideDiscussion';
 
 
 function App() {
@@ -14,7 +15,7 @@ function App() {
         <Route path='/exp-share' element={<ExpShare/>}/>
         <Route path='/upload' element={<UploadSlide/>}/>
         <Route path='/search' element={<SlideSearch/>}/>
-        <Route path='/discussion' element={<ExpShare/>}/>
+        <Route path='/discussion/:slideId' element={<SlideDiscussion/>}/>
         <Route path='/ranking' element={<SlideRanking/>}/>
         <Route path='/profile' element={<ExpShare/>}/>
       </Routes>
