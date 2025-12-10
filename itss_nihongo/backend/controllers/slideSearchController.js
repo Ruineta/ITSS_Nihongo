@@ -143,6 +143,7 @@ export const searchSlides = async (req, res) => {
         s.title,
         s.description,
         s.file_url,
+        s.thumbnail_url,
         s.file_type,
         s.difficulty_level,
         s.difficulty_score,
@@ -191,7 +192,7 @@ export const searchSlides = async (req, res) => {
       difficultyScore: row.difficulty_score,
       fileUrl: row.file_url,
       fileType: row.file_type,
-      thumbnail: generateThumbnailUrl(row.file_url, row.file_type)
+      thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
     }));
 
     return res.status(200).json({
@@ -233,6 +234,7 @@ export const getSlideById = async (req, res) => {
         s.title,
         s.description,
         s.file_url,
+        s.thumbnail_url,
         s.file_type,
         s.difficulty_level,
         s.difficulty_score,
@@ -309,7 +311,7 @@ export const getSlideById = async (req, res) => {
         difficultyPoints: row.difficulty_points,
         fileUrl: row.file_url,
         fileType: row.file_type,
-        thumbnail: generateThumbnailUrl(row.file_url, row.file_type)
+        thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
       }
     });
 
