@@ -147,7 +147,7 @@ BEGIN
 END $$;
 -- Insert sample slides with varying difficulty scores and creation dates
 -- Physics slides by Suzuki
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -159,11 +159,12 @@ SELECT
   95, 
   45, 
   true,
-  '2024-03-15 10:30:00'::timestamp
+  '2024-03-15 10:30:00'::timestamp,
+  'https://picsum.photos/seed/quantum/400/300'
 FROM users u, subjects s
 WHERE u.email = 'suzuki@example.com' AND s.name = '物理';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -175,11 +176,12 @@ SELECT
   88, 
   62, 
   true,
-  '2024-06-20 14:15:00'::timestamp
+  '2024-06-20 14:15:00'::timestamp,
+  'https://picsum.photos/seed/relativity/400/300'
 FROM users u, subjects s
 WHERE u.email = 'suzuki@example.com' AND s.name = '物理';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -191,12 +193,13 @@ SELECT
   82, 
   105, 
   true,
-  '2023-09-10 09:00:00'::timestamp
+  '2023-09-10 09:00:00'::timestamp,
+  'https://picsum.photos/seed/electro/400/300'
 FROM users u, subjects s
 WHERE u.email = 'suzuki@example.com' AND s.name = '物理';
 
 -- Math slides by Tanaka
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -208,11 +211,12 @@ SELECT
   72, 
   123, 
   true,
-  '2024-01-10 11:00:00'::timestamp
+  '2024-01-10 11:00:00'::timestamp,
+  'https://picsum.photos/seed/calculus/400/300'
 FROM users u, subjects s
 WHERE u.email = 'tanaka@example.com' AND s.name = '数学';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -224,11 +228,12 @@ SELECT
   85, 
   89, 
   true,
-  '2023-05-25 16:30:00'::timestamp
+  '2023-05-25 16:30:00'::timestamp,
+  'https://picsum.photos/seed/fourier/400/300'
 FROM users u, subjects s
 WHERE u.email = 'tanaka@example.com' AND s.name = '数学';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -240,12 +245,13 @@ SELECT
   75, 
   142, 
   true,
-  '2022-11-08 13:45:00'::timestamp
+  '2022-11-08 13:45:00'::timestamp,
+  'https://picsum.photos/seed/linear/400/300'
 FROM users u, subjects s
 WHERE u.email = 'tanaka@example.com' AND s.name = '数学';
 
 -- Japanese education slides by Yamada
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -257,11 +263,12 @@ SELECT
   78, 
   156, 
   true,
-  '2024-08-03 10:20:00'::timestamp
+  '2024-08-03 10:20:00'::timestamp,
+  'https://picsum.photos/seed/keigo/400/300'
 FROM users u, subjects s
 WHERE u.email = 'yamada@example.com' AND s.name = '日本語教育';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -273,12 +280,13 @@ SELECT
   65, 
   98, 
   true,
-  '2021-04-18 15:00:00'::timestamp
+  '2021-04-18 15:00:00'::timestamp,
+  'https://picsum.photos/seed/kobun/400/300'
 FROM users u, subjects s
 WHERE u.email = 'yamada@example.com' AND s.name = '日本語教育';
 
 -- Chemistry slides by Sato
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -290,11 +298,12 @@ SELECT
   90, 
   71, 
   true,
-  '2023-12-22 08:30:00'::timestamp
+  '2023-12-22 08:30:00'::timestamp,
+  'https://picsum.photos/seed/organic/400/300'
 FROM users u, subjects s
 WHERE u.email = 'sato@example.com' AND s.name = '化学';
 
-INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)
+INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at, thumbnail_url)
 SELECT 
   u.id, 
   s.id, 
@@ -306,7 +315,8 @@ SELECT
   68, 
   134, 
   true,
-  '2024-02-14 12:00:00'::timestamp
+  '2024-02-14 12:00:00'::timestamp,
+  'https://picsum.photos/seed/equilibrium/400/300'
 FROM users u, subjects s
 WHERE u.email = 'sato@example.com' AND s.name = '化学';
 
