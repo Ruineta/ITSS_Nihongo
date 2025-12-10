@@ -20,7 +20,7 @@ const Navigation = () => {
     };
 
     const isActive = (path) => {
-        return location.pathname === path || (location.pathname === '/' && path === '/exp-share');
+        return location.pathname === path || (location.pathname === '/' && path === '/search');
     };
 
     const navStyle = {

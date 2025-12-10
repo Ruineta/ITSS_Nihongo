@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import slideRankingRoutes from './routes/slideRankingRoutes.js';
+import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
 import pool from './config/database.js';
@@ -51,10 +52,16 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/health',
+      slideSearch: '/api/slides/search',
+      slideDetail: '/api/slides/:id',
+      slideFilters: '/api/slides/filters',
       slideRanking: '/api/slides/ranking'
     }
   });
 });
+
+// Mount slide search routes
+app.use('/api/slides', slideSearchRoutes);
 
 // Mount slide ranking routes
 app.use('/api/slides/ranking', slideRankingRoutes);
