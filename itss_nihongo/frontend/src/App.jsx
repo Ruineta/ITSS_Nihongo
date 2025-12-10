@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import ExpShare from './pages/ExperienceShare';
 import UploadSlide from './pages/UploadSlide';
+import SlideRanking from "./pages/SlideRanking";
 import SlideSearch from './pages/SlideSearch';
 
 
@@ -14,7 +15,7 @@ function App() {
         <Route path='/upload' element={<UploadSlide/>}/>
         <Route path='/search' element={<SlideSearch/>}/>
         <Route path='/discussion' element={<ExpShare/>}/>
-        <Route path='/ranking' element={<ExpShare/>}/>
+        <Route path='/ranking' element={<SlideRanking/>}/>
         <Route path='/profile' element={<ExpShare/>}/>
       </Routes>
     </div>

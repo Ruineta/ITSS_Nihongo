@@ -21,6 +21,130 @@ INSERT INTO users (email, password_hash, full_name, school_name, specialization,
   ('sato@example.com', '$2b$10$dummyhash4', '佐藤先生', '名古屋大学', '化学', 12)
 ON CONFLICT (email) DO NOTHING;
 
+-- Insert sample slides with varying difficulty scores using subqueries for IDs
+DO $$
+DECLARE
+  suzuki_id INT;
+  tanaka_id INT;
+  yamada_id INT;
+  sato_id INT;
+  physics_id INT;
+  math_id INT;
+  japanese_id INT;
+  chemistry_id INT;
+BEGIN
+  -- Get user IDs
+  SELECT id INTO suzuki_id FROM users WHERE email = 'suzuki@example.com';
+  SELECT id INTO tanaka_id FROM users WHERE email = 'tanaka@example.com';
+  SELECT id INTO yamada_id FROM users WHERE email = 'yamada@example.com';
+  SELECT id INTO sato_id FROM users WHERE email = 'sato@example.com';
+  
+  -- Get subject IDs
+  SELECT id INTO physics_id FROM subjects WHERE name = '物理';
+  SELECT id INTO math_id FROM subjects WHERE name = '数学';
+  SELECT id INTO japanese_id FROM subjects WHERE name = '日本語教育';
+  SELECT id INTO chemistry_id FROM subjects WHERE name = '化学';
+  
+  -- Insert slides only if user and subject IDs are found
+  IF suzuki_id IS NOT NULL AND physics_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (suzuki_id, physics_id, '量子力学の基礎：波動関数', '量子力学における波動関数の基本概念を解説', 'https://example.com/slides/quantum-basics.pdf', 'pdf', '上級', 95, 45, true),
+      (suzuki_id, physics_id, '相対性理論入門', 'アインシュタインの特殊相対性理論の基礎', 'https://example.com/slides/relativity.pptx', 'pptx', '上級', 88, 62, true),
+      (suzuki_id, physics_id, '電磁気学の基本法則', 'マクスウェル方程式の導出と応用', 'https://example.com/slides/electromagnetism.pdf', 'pdf', '上級', 82, 105, true);
+  END IF;
+  
+  IF tanaka_id IS NOT NULL AND math_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (tanaka_id, math_id, '微積分の応用：最適化問題', '実世界の最適化問題における微積分の応用', 'https://example.com/slides/calculus-optimization.pdf', 'pdf', '中級', 72, 123, true),
+      (tanaka_id, math_id, 'フーリエ変換の基礎', '信号処理におけるフーリエ変換の理論と実践', 'https://example.com/slides/fourier.pdf', 'pdf', '上級', 85, 89, true),
+      (tanaka_id, math_id, '線形代数：固有値問題', '行列の固有値と固有ベクトルの応用', 'https://example.com/slides/eigenvalues.pdf', 'pdf', '中級', 75, 142, true);
+  END IF;
+  
+  IF yamada_id IS NOT NULL AND japanese_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (yamada_id, japanese_id, 'N1レベルの敬語表現', '日本語能力試験N1レベルの敬語の使い分け', 'https://example.com/slides/keigo-n1.pptx', 'pptx', 'N1', 78, 156, true),
+      (yamada_id, japanese_id, '古典文法の基礎', '古文における文法事項の基本', 'https://example.com/slides/kobun-grammar.pdf', 'pdf', '中級', 65, 98, true);
+  END IF;
+  
+  IF sato_id IS NOT NULL AND chemistry_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES 
+      (sato_id, chemistry_id, '有機化学反応機構', '有機化合物の反応メカニズムの詳細', 'https://example.com/slides/organic-mechanisms.pdf', 'pdf', '上級', 90, 71, true),
+      (sato_id, chemistry_id, '化学平衡の理論', '平衡定数と反応の進行方向', 'https://example.com/slides/equilibrium.pptx', 'pptx', '中級', 68, 134, true);
+  END IF;
+END $$;
+
+-- Insert difficulty analysis points using slide titles to find IDs
+DO $$
+DECLARE
+  slide_id_var INT;
+BEGIN
+  -- Analysis points for "量子力学の基礎：波動関数" (highest difficulty)
+  SELECT id INTO slide_id_var FROM slides WHERE title = '量子力学の基礎：波動関数' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '専門用語が難しい'),
+      (slide_id_var, '抽象的な概念'),
+      (slide_id_var, '数式の理解');
+  END IF;
+
+  -- Analysis points for "有機化学反応機構"
+  SELECT id INTO slide_id_var FROM slides WHERE title = '有機化学反応機構' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '反応機構の複雑さ'),
+      (slide_id_var, '立体化学の理解'),
+      (slide_id_var, '矢印の記法');
+  END IF;
+
+  -- Analysis points for "相対性理論入門"
+  SELECT id INTO slide_id_var FROM slides WHERE title = '相対性理論入門' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '時空の概念が難解'),
+      (slide_id_var, '数学的背景知識'),
+      (slide_id_var, '直感に反する内容');
+  END IF;
+
+  -- Analysis points for "フーリエ変換の基礎"
+  SELECT id INTO slide_id_var FROM slides WHERE title = 'フーリエ変換の基礎' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '積分の計算'),
+      (slide_id_var, '複素数の扱い');
+  END IF;
+
+  -- Analysis points for "電磁気学の基本法則"
+  SELECT id INTO slide_id_var FROM slides WHERE title = '電磁気学の基本法則' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, 'ベクトル解析が必要'),
+      (slide_id_var, '偏微分方程式');
+  END IF;
+
+  -- Analysis points for "N1レベルの敬語表現"
+  SELECT id INTO slide_id_var FROM slides WHERE title = 'N1レベルの敬語表現' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '謙譲語と尊敬語の区別'),
+      (slide_id_var, '場面による使い分け');
+  END IF;
+
+  -- Analysis points for "線形代数：固有値問題"
+  SELECT id INTO slide_id_var FROM slides WHERE title = '線形代数：固有値問題' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, '行列の対角化'),
+      (slide_id_var, '応用例の理解');
+  END IF;
+
+  -- Analysis points for "微積分の応用：最適化問題"
+  SELECT id INTO slide_id_var FROM slides WHERE title = '微積分の応用：最適化問題' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES 
+      (slide_id_var, 'ラグランジュ乗数法'),
+      (slide_id_var, '制約条件の設定');
+  END IF;
+END $$;
 -- Insert sample slides with varying difficulty scores and creation dates
 -- Physics slides by Suzuki
 INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public, created_at)

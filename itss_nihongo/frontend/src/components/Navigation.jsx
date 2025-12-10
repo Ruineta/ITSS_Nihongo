@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import App from "../App";
 
 const Navigation = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const Navigation = () => {
         { label: 'アップロード', path: '/upload' },
         { label: 'ディスカッション', path: '/discussion' },
         { label: 'ノウハウ共有', path: '/exp-share' },
-        { label: '教師ランキング', path: '/ranking' },
+        { label: '難解ランキング', path: '/ranking' },
         { label: 'プロフィール', path: '/profile' }
     ];
 
