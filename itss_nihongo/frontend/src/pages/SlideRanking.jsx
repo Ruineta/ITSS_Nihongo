@@ -1,14 +1,17 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 import {TrendingUp} from 'lucide-react';
 import RankingCard from "../components/RankingCard";
 import Navigation from "../components/Navigation";
 import Header from "../components/Header";
 
+const API_BASE = process.env.REACT_APP_API_BASE || '';
+
 const SlideRanking = () => {
     const[activeTab, setActiveTab] = useState('難解ランキング');
     const[loading, setLoading] = useState(true);
 
-    const [useMockData, setUseMockData] = useState(true);
+    // Use real data by default; toggle to mock only when backend is unavailable
+    const [useMockData, setUseMockData] = useState(false);
     const mockSlides = [
         {
             id: 999,
@@ -49,11 +52,11 @@ const SlideRanking = () => {
         alert('ログアウトしました');
     };
 
-    const fetchSlides = async (offset = 0) => {
+    const fetchSlides = useCallback(async (offset = 0) => {
         try {
             setLoading(true);
             const response = await fetch(
-                `/api/slides/ranking/difficult?limit=10&offset=${offset}&minScore=0`
+                `${API_BASE}/api/slides/ranking/difficult?limit=10&offset=${offset}&minScore=0`
             );
 
             // Check if response is JSON
@@ -70,7 +73,9 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                const transformedSlides = result.data.map(slide => ({
+                const { slides: serverSlides = [], pagination: serverPagination } = result.data || {};
+
+                const transformedSlides = serverSlides.map(slide => ({
                     id: slide.id,
                     title: slide.title,
                     description: slide.description,
@@ -91,7 +96,9 @@ const SlideRanking = () => {
                 }));
 
                 setSlides(transformedSlides);
-                setPagination(result.data.pagination);
+                if (serverPagination) {
+                    setPagination(serverPagination);
+                }
             }
         }catch(err) {
             setError(err.message);
@@ -102,11 +109,11 @@ const SlideRanking = () => {
         }finally {
             setLoading(false);
         }
-    };
+    }, [setSlides, setPagination]);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
-            const response = await fetch('/api/slides/ranking/difficult/stats')
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/stats`)
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
@@ -128,7 +135,7 @@ const SlideRanking = () => {
         }catch (err) {
             console.error('統計情報の取得中にエラーが発生しました:', err);
         }
-    };
+    }, []);
 
     React.useEffect(() => {
         if (useMockData) {
@@ -154,7 +161,7 @@ const SlideRanking = () => {
 
     const handleRate = async (slideID, difficultyScore, analysisPoint) => {
         try {
-            const response = await fetch('/api/slides/${slideID}/rate', {
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/${slideID}/rate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -193,7 +200,7 @@ const SlideRanking = () => {
     const handleFeedback = async (slideID, feedback) => {
         try {
             // Call backend API to update feedback
-            const response = await fetch(`/api/slides/${slideID}/feedback`, {
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/${slideID}/feedback`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
