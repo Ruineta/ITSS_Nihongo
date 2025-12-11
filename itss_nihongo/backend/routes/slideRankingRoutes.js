@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   getDifficultSlidesRanking,
-  getDifficultyStats
+  getDifficultyStats, submitSlideRating, updateSlideFeedback
 } from '../controllers/slideRankingController.js';
 
 const router = express.Router();
@@ -27,5 +27,7 @@ router.get('/difficult', getDifficultSlidesRanking);
  * @access  Public
  */
 router.get('/difficult/stats', getDifficultyStats);
-
+// In your routes file
+router.post('/difficult/:slideId/rate', submitSlideRating);
+router.put('/difficult/:slideId/feedback', updateSlideFeedback);
 export default router;

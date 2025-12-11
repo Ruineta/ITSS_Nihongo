@@ -94,9 +94,12 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
 
                     {/* Author and Stats */}
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                        <span>投稿者: {slide.author}</span>
-                        {slide.author.school && (
+                        <span>投稿者: {slide.author?.name || slide.author || '不明'}</span>
+                        {slide.author?.school && (
                             <span className="text-gray-500">• {slide.author.school}</span>
+                        )}
+                        {slide.author?.specialization && (
+                            <span className="text-gray-500">• {slide.author.specialization}</span>
                         )}
                         <span className="flex items-center gap-1"/>
                     </div>
@@ -118,7 +121,7 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                     </div>
 
                     {/* Analysis Points - Show if rated or has analysis points */}
-                    {(slide.isRated || slide.keyPoints?.length > 0) && slide.keyPoints?.length > 0 && (
+                    {slide.analysisPoints && slide.analysisPoints.length > 0 && (
                         <div className="bg-orange-50 rounded-lg p-4 mb-4">
                             <div className="flex items-center gap-2 mb-2 text-orange-700">
                                 <TrendingUp className="w-5 h-5" />
@@ -126,7 +129,7 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                             </div>
                             <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                                 {slide.analysisPoints.map((point, idx) => (
-                                    <li key={idx}>{point}</li>
+                                    <li key={idx}>{typeof point === 'string' ? point : point.description || point}</li>
                                 ))}
                             </ul>
                         </div>
@@ -254,29 +257,6 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                     )}
                 </div>
             </div>
-
-            <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .slider::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: white;
-          border: 3px solid #3b82f6;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-      `}</style>
         </div>
     );
 };

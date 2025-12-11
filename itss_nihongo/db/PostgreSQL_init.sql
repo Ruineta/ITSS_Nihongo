@@ -130,6 +130,20 @@ CREATE TABLE difficulty_analysis_points (
     point_description TEXT NOT NULL -- 難解理由 (例: "専門用語が多すぎる", "数式が複雑")
 );
 
+CREATE TABLE slide_ratings (
+                               id SERIAL PRIMARY KEY,
+                               slide_id INTEGER NOT NULL REFERENCES slides(id) ON DELETE CASCADE,
+                               user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                               difficulty_score INTEGER NOT NULL CHECK (difficulty_score >= 0 AND difficulty_score <= 100),
+                               feedback TEXT,
+                               created_at TIMESTAMP DEFAULT NOW(),
+                               updated_at TIMESTAMP DEFAULT NOW(),
+                               UNIQUE(slide_id, user_id)
+);
+
+CREATE INDEX idx_slide_ratings_slide_id ON slide_ratings(slide_id);
+CREATE INDEX idx_slide_ratings_user_id ON slide_ratings(user_id);
+
 -- インデックス作成 (パフォーマンス最適化)
 CREATE INDEX idx_slides_subject ON slides(subject_id); -- 科目検索用
 CREATE INDEX idx_slides_title ON slides(title); -- タイトル検索用

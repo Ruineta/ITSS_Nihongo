@@ -1,23 +1,30 @@
-import React, {useState} from "react";
+import React, {useCallback, useState} from "react";
 import {TrendingUp} from 'lucide-react';
 import RankingCard from "../components/RankingCard";
 import Navigation from "../components/Navigation";
 import Header from "../components/Header";
 
+const API_BASE = process.env.REACT_APP_API_BASE || '';
+
 const SlideRanking = () => {
     const[activeTab, setActiveTab] = useState('難解ランキング');
     const[loading, setLoading] = useState(true);
 
-    const [useMockData, setUseMockData] = useState(true);
-    const mockSlides = [
+    // Use real data by default; toggle to mock only when backend is unavailable
+    const [useMockData, setUseMockData] = useState(false);
+    
+    // Move mockSlides outside component to prevent recreation on each render
+    const mockSlides = React.useMemo(() => [
         {
             id: 999,
             title: '量子力学の基礎：波動関数',
             subject: '物理',
             description: '量子力学における波動関数の基本概念と応用について解説したスライドです',
-            author: '鈴木先生',
-            authorSchool: '東京大学',
-            authorSpecialization: '理論物理学',
+            author: {
+                name: '鈴木先生',
+                school: '東京大学',
+                specialization: '理論物理学'
+            },
             difficultyScore: 95,
             difficultyLevel: 'very_hard',
             fileUrl: '/slides/quantum-mechanics.pdf',
@@ -26,14 +33,14 @@ const SlideRanking = () => {
             isRated: true,
             userRating: 0,
             userFeedback: '',
-            analysisPoint: [
+            analysisPoints: [
                 '専門用語が難しい',
                 '抽象的な概念の理解が困難',
                 '数式の展開が複雑',
                 '前提知識が多く必要'
             ]
         }
-    ];
+    ], []);
 
     const[slides, setSlides] = useState(useMockData ? mockSlides :[]);
     const[error, setError] = useState(null);
@@ -49,11 +56,11 @@ const SlideRanking = () => {
         alert('ログアウトしました');
     };
 
-    const fetchSlides = async (offset = 0) => {
+    const fetchSlides = useCallback(async (offset = 0) => {
         try {
             setLoading(true);
             const response = await fetch(
-                `/api/slides/ranking/difficult?limit=10&offset=${offset}&minScore=0`
+                `${API_BASE}/api/slides/ranking/difficult?limit=10&offset=${offset}&minScore=0`
             );
 
             // Check if response is JSON
@@ -70,7 +77,9 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                const transformedSlides = result.data.map(slide => ({
+                const { slides: serverSlides = [], pagination: serverPagination } = result.data || {};
+
+                const transformedSlides = serverSlides.map(slide => ({
                     id: slide.id,
                     title: slide.title,
                     description: slide.description,
@@ -81,32 +90,39 @@ const SlideRanking = () => {
                     viewCount: slide.viewCount || 0,
                     createdAt: slide.createdAt,
                     updatedAt: slide.updatedAt,
-                    author: {
-                        name: slide.name,
-                        school: slide.school,
-                        specialization: slide.specialization
+                    author: slide.author ? {
+                        name: slide.author.name || '不明',
+                        school: slide.author.school || null,
+                        specialization: slide.author.specialization || null
+                    } : {
+                        name: '不明',
+                        school: null,
+                        specialization: null
                     },
-                    subject: slide.subject?.name || null,
-                    analysisPoints: slide.analysisPoints.map(point => point.description)
+                    subject: slide.subject?.name || slide.subject || null,
+                    analysisPoints: slide.analysisPoints?.map(point => 
+                        typeof point === 'string' ? point : point.description
+                    ) || []
                 }));
 
                 setSlides(transformedSlides);
-                setPagination(result.data.pagination);
+                if (serverPagination) {
+                    setPagination(serverPagination);
+                }
             }
         }catch(err) {
             setError(err.message);
             console.error('スライドの取得中にエラーが発生しました:', err);
-            // Fallback to mock data on error
-            console.log('模擬データへのフォールバック...');
-            setUseMockData(true);
+            // Don't automatically switch to mock data to prevent infinite loops
+            // User can manually switch if needed
         }finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
         try {
-            const response = await fetch('/api/slides/ranking/difficult/stats')
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/stats`)
 
             const contentType = response.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
@@ -128,7 +144,7 @@ const SlideRanking = () => {
         }catch (err) {
             console.error('統計情報の取得中にエラーが発生しました:', err);
         }
-    };
+    }, []);
 
     React.useEffect(() => {
         if (useMockData) {
@@ -144,7 +160,8 @@ const SlideRanking = () => {
         }
         void fetchSlides();
         void fetchStats();
-    },[useMockData, fetchSlides, fetchStats, mockSlides]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [useMockData]);
 
     const handleLoadMore = () => {
         if(pagination.hasMore){
@@ -154,7 +171,7 @@ const SlideRanking = () => {
 
     const handleRate = async (slideID, difficultyScore, analysisPoint) => {
         try {
-            const response = await fetch('/api/slides/${slideID}/rate', {
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/${slideID}/rate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -172,16 +189,18 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                setSlides(result.map(slide =>
+                // Update the specific slide in the current slides array
+                setSlides(prevSlides => prevSlides.map(slide =>
                     slide.id === slideID ? {
                         ...slide,
                         isRated: true,
                         userRating: difficultyScore,
                         userFeedback: analysisPoint,
-                        difficultyScore: result.data?.newdifficultyScore || slide.difficultyScore
+                        difficultyScore: result.data?.newDifficultyScore || slide.difficultyScore
                     } : slide
                 ));
 
+                // Refresh the list to get updated scores
                 await fetchSlides(pagination.offset);
             }
         } catch (error) {
@@ -193,7 +212,7 @@ const SlideRanking = () => {
     const handleFeedback = async (slideID, feedback) => {
         try {
             // Call backend API to update feedback
-            const response = await fetch(`/api/slides/${slideID}/feedback`, {
+            const response = await fetch(`${API_BASE}/api/slides/ranking/difficult/${slideID}/feedback`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -210,8 +229,8 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                // Update local state
-                setSlides(slides.map(slide =>
+                // Update local state using functional update
+                setSlides(prevSlides => prevSlides.map(slide =>
                     slide.id === slideID
                         ? { ...slide, userFeedback: feedback }
                         : slide

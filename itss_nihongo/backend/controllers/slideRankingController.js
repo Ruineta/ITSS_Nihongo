@@ -225,4 +225,96 @@ export const getDifficultyStats = async (req, res) => {
   }
 };
 
+// 1. Submit user rating
+export const submitSlideRating = async (req, res) => {
+  try {
+    const { slideId } = req.params;
+    const { difficultyScore, feedback } = req.body;
+    const userId = req.user.id; // From auth middleware
 
+    // Validate
+    if (difficultyScore < 0 || difficultyScore > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Difficulty score must be between 0 and 100'
+      });
+    }
+
+    // Insert or update user rating
+    const query = `
+      INSERT INTO slide_ratings (slide_id, user_id, difficulty_score, feedback)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (slide_id, user_id) 
+      DO UPDATE SET 
+        difficulty_score = $3,
+        feedback = $4,
+        updated_at = NOW()
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [slideId, userId, difficultyScore, feedback]);
+
+    // Recalculate average difficulty score
+    const avgQuery = `
+      SELECT AVG(difficulty_score) as avg_score
+      FROM slide_ratings
+      WHERE slide_id = $1
+    `;
+    const avgResult = await db.query(avgQuery, [slideId]);
+    const newAvgScore = Math.round(avgResult.rows[0].avg_score);
+
+    // Update slide's difficulty score
+    await db.query(
+        'UPDATE slides SET difficulty_score = $1 WHERE id = $2',
+        [newAvgScore, slideId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        slideId,
+        userRating: difficultyScore,
+        newDifficultyScore: newAvgScore
+      }
+    });
+  } catch (error) {
+    console.error('Error submitting rating:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// 2. Update feedback only
+export const updateSlideFeedback = async (req, res) => {
+  try {
+    const { slideId } = req.params;
+    const { feedback } = req.body;
+    const userId = req.user.id;
+
+    const query = `
+      UPDATE slide_ratings
+      SET feedback = $1, updated_at = NOW()
+      WHERE slide_id = $2 AND user_id = $3
+      RETURNING *
+    `;
+
+    const result = await db.query(query, [feedback, slideId, userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Rating not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        slideId,
+        feedback
+      }
+    });
+  } catch (error) {
+    console.error('Error updating feedback:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};

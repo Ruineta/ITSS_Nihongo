@@ -543,6 +543,72 @@ WHERE t.name IN ('中級', '数学', '線形代数', '応用')
       AND st.tag_id = t.id
   );
 
+-- Additional minimal records for lightweight testing (about 3 slides)
+DO $$
+DECLARE
+  suzuki_id INT;
+  tanaka_id INT;
+  yamada_id INT;
+  physics_id INT;
+  math_id INT;
+  japanese_id INT;
+BEGIN
+  SELECT id INTO suzuki_id FROM users WHERE email = 'suzuki@example.com';
+  SELECT id INTO tanaka_id FROM users WHERE email = 'tanaka@example.com';
+  SELECT id INTO yamada_id FROM users WHERE email = 'yamada@example.com';
+  SELECT id INTO physics_id FROM subjects WHERE name = '物理';
+  SELECT id INTO math_id FROM subjects WHERE name = '数学';
+  SELECT id INTO japanese_id FROM subjects WHERE name = '日本語教育';
+
+  IF suzuki_id IS NOT NULL AND physics_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES
+      (suzuki_id, physics_id, '量子情報入門', '量子ビットと重ね合わせの基礎', 'https://example.com/slides/quantum-info.pdf', 'pdf', '上級', 92, 12, true)
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  IF tanaka_id IS NOT NULL AND math_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES
+      (tanaka_id, math_id, '統計的学習理論', '汎化誤差とVC次元の概要', 'https://example.com/slides/stat-learning.pptx', 'pptx', '上級', 81, 18, true)
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  IF yamada_id IS NOT NULL AND japanese_id IS NOT NULL THEN
+    INSERT INTO slides (user_id, subject_id, title, description, file_url, file_type, difficulty_level, difficulty_score, view_count, is_public) VALUES
+      (yamada_id, japanese_id, '日本語教育の評価設計', '評価ルーブリックと信頼性の確保', 'https://example.com/slides/jp-assessment.pdf', 'pdf', '中級', 77, 9, true)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
+
+-- Analysis points for the additional minimal records
+DO $$
+DECLARE
+  slide_id_var INT;
+BEGIN
+  SELECT id INTO slide_id_var FROM slides WHERE title = '量子情報入門' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES
+      (slide_id_var, '線形代数と量子力学の前提知識が必要'),
+      (slide_id_var, '抽象的なベクトル空間の理解が求められる')
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  SELECT id INTO slide_id_var FROM slides WHERE title = '統計的学習理論' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES
+      (slide_id_var, '汎化誤差の式変形が多い'),
+      (slide_id_var, '確率論の復習が必要')
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  SELECT id INTO slide_id_var FROM slides WHERE title = '日本語教育の評価設計' LIMIT 1;
+  IF slide_id_var IS NOT NULL THEN
+    INSERT INTO difficulty_analysis_points (slide_id, point_description) VALUES
+      (slide_id_var, '評価基準の整合性を考える必要'),
+      (slide_id_var, '信頼性と妥当性の概念が抽象的')
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
+
 -- Commit the transaction
 COMMIT;
 
