@@ -15,8 +15,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+// CORS configuration - allow multiple origins in development
+const allowedOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',')
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || 
+        (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost'))) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -71,12 +86,29 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log('=================================');
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌐 API Base URL: http://localhost:${PORT}/api`);
   console.log('=================================');
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`\n❌ Error: Port ${PORT} is already in use.`);
+    console.error('Please either:');
+    console.error(`  1. Stop the process using port ${PORT}`);
+    console.error(`  2. Use a different port by setting PORT environment variable`);
+    console.error('\nTo find the process using port 5000, run:');
+    console.error('  Windows: netstat -ano | findstr :5000');
+    console.error('  Then kill it: taskkill /PID <PID> /F');
+    process.exit(1);
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
 });
 
 // Graceful shutdown

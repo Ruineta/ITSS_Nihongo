@@ -12,15 +12,19 @@ const SlideRanking = () => {
 
     // Use real data by default; toggle to mock only when backend is unavailable
     const [useMockData, setUseMockData] = useState(false);
-    const mockSlides = [
+    
+    // Move mockSlides outside component to prevent recreation on each render
+    const mockSlides = React.useMemo(() => [
         {
             id: 999,
             title: '量子力学の基礎：波動関数',
             subject: '物理',
             description: '量子力学における波動関数の基本概念と応用について解説したスライドです',
-            author: '鈴木先生',
-            authorSchool: '東京大学',
-            authorSpecialization: '理論物理学',
+            author: {
+                name: '鈴木先生',
+                school: '東京大学',
+                specialization: '理論物理学'
+            },
             difficultyScore: 95,
             difficultyLevel: 'very_hard',
             fileUrl: '/slides/quantum-mechanics.pdf',
@@ -29,14 +33,14 @@ const SlideRanking = () => {
             isRated: true,
             userRating: 0,
             userFeedback: '',
-            analysisPoint: [
+            analysisPoints: [
                 '専門用語が難しい',
                 '抽象的な概念の理解が困難',
                 '数式の展開が複雑',
                 '前提知識が多く必要'
             ]
         }
-    ];
+    ], []);
 
     const[slides, setSlides] = useState(useMockData ? mockSlides :[]);
     const[error, setError] = useState(null);
@@ -86,13 +90,19 @@ const SlideRanking = () => {
                     viewCount: slide.viewCount || 0,
                     createdAt: slide.createdAt,
                     updatedAt: slide.updatedAt,
-                    author: {
-                        name: slide.name,
-                        school: slide.school,
-                        specialization: slide.specialization
+                    author: slide.author ? {
+                        name: slide.author.name || '不明',
+                        school: slide.author.school || null,
+                        specialization: slide.author.specialization || null
+                    } : {
+                        name: '不明',
+                        school: null,
+                        specialization: null
                     },
-                    subject: slide.subject?.name || null,
-                    analysisPoints: slide.analysisPoints.map(point => point.description)
+                    subject: slide.subject?.name || slide.subject || null,
+                    analysisPoints: slide.analysisPoints?.map(point => 
+                        typeof point === 'string' ? point : point.description
+                    ) || []
                 }));
 
                 setSlides(transformedSlides);
@@ -103,13 +113,12 @@ const SlideRanking = () => {
         }catch(err) {
             setError(err.message);
             console.error('スライドの取得中にエラーが発生しました:', err);
-            // Fallback to mock data on error
-            console.log('模擬データへのフォールバック...');
-            setUseMockData(true);
+            // Don't automatically switch to mock data to prevent infinite loops
+            // User can manually switch if needed
         }finally {
             setLoading(false);
         }
-    }, [setSlides, setPagination]);
+    }, []);
 
     const fetchStats = useCallback(async () => {
         try {
@@ -151,7 +160,8 @@ const SlideRanking = () => {
         }
         void fetchSlides();
         void fetchStats();
-    },[useMockData, fetchSlides, fetchStats, mockSlides]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [useMockData]);
 
     const handleLoadMore = () => {
         if(pagination.hasMore){
@@ -179,16 +189,18 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                setSlides(result.map(slide =>
+                // Update the specific slide in the current slides array
+                setSlides(prevSlides => prevSlides.map(slide =>
                     slide.id === slideID ? {
                         ...slide,
                         isRated: true,
                         userRating: difficultyScore,
                         userFeedback: analysisPoint,
-                        difficultyScore: result.data?.newdifficultyScore || slide.difficultyScore
+                        difficultyScore: result.data?.newDifficultyScore || slide.difficultyScore
                     } : slide
                 ));
 
+                // Refresh the list to get updated scores
                 await fetchSlides(pagination.offset);
             }
         } catch (error) {
@@ -217,8 +229,8 @@ const SlideRanking = () => {
             const result = await response.json();
 
             if (result.success) {
-                // Update local state
-                setSlides(slides.map(slide =>
+                // Update local state using functional update
+                setSlides(prevSlides => prevSlides.map(slide =>
                     slide.id === slideID
                         ? { ...slide, userFeedback: feedback }
                         : slide
