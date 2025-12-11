@@ -34,6 +34,7 @@ CREATE TABLE slides (
     title VARCHAR(100) NOT NULL, -- タイトル (100文字以内)
     description TEXT, -- 説明文
     file_url TEXT NOT NULL, -- ファイルの保存先URL (S3など)
+    thumbnail_url TEXT, -- サムネイル画像のURL (第1ページから生成)
     file_type VARCHAR(10) CHECK (file_type IN ('pdf', 'pptx', 'ppt')), -- 対応ファイル形式
     difficulty_level VARCHAR(50), -- 難易度レベル (フィルタ用: 例 'N1', '上級')
     difficulty_score INT DEFAULT 0 CHECK (difficulty_score BETWEEN 0 AND 100), -- 難解度スコア (ランキング用 0-100点)
