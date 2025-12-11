@@ -9,7 +9,9 @@ import {
 } from "../services/discussionService";
 
 const SlideDiscussion = () => {
-  const { slideId } = useParams();
+  const { slideId: paramSlideId } = useParams();
+  // Always use slide 1, but allow override via route parameter
+  const slideId = paramSlideId || "1";
 
   // State management
   const [slide, setSlide] = useState(null);
@@ -129,7 +131,6 @@ const SlideDiscussion = () => {
         };
         setComments([...comments, newCommentObj]);
         setNewComment("");
-        alert("コメントを投稿しました！");
       } else {
         alert(`エラー: ${response.message}`);
       }
@@ -329,16 +330,16 @@ const SlideDiscussion = () => {
                 comments.map((comment) => (
                   <div
                     key={comment.id}
-                    className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                    className="bg-white rounded-lg p-4 border border-gray-200"
                   >
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 text-left">
                       {/* Avatar */}
                       <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold flex-shrink-0 text-sm">
                         {comment.avatar}
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1">
+                      <div className="flex-1 text-left">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-gray-900 text-sm">
                             {comment.author}
@@ -348,7 +349,7 @@ const SlideDiscussion = () => {
                             {comment.timestamp}
                           </span>
                         </div>
-                        <p className="text-gray-700 text-sm">
+                        <p className="text-gray-700 text-sm text-left">
                           {comment.content}
                         </p>
                       </div>
@@ -356,7 +357,7 @@ const SlideDiscussion = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-center text-gray-500 py-8">
+                <p className="text-left text-gray-500 py-8">
                   コメントはまだありません
                 </p>
               )}
