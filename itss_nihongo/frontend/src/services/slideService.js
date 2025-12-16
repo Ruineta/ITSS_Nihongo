@@ -230,6 +230,46 @@ export const getSlideById = async (id) => {
 };
 
 /**
+ * Rate slide difficulty and feedback from search/detail page
+ * @param {number} id - Slide ID
+ * @param {number} difficultyScore - Score 0-100
+ * @param {string} feedback - Optional feedback
+ * @returns {Promise<Object>}
+ */
+export const rateSlide = async (id, difficultyScore, feedback) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/rate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                difficultyScore,
+                feedback: feedback || null,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('評価の送信に失敗しました');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || '評価の送信に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        console.error('Error rating slide:', error);
+        throw error;
+    }
+};
+
+/**
  * Get available subjects for filtering
  * @returns {Promise<Object>} - List of subjects
  */
@@ -301,6 +341,7 @@ export const getPopularTags = async (limit = 20) => {
 const slideService = {
     searchSlides,
     getSlideById,
+    rateSlide,
     getSubjects,
     getPopularTags
 };

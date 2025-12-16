@@ -29,10 +29,7 @@ const allowedOrigins = [
 ];
 
 // Middleware
-// CORS configuration - allow multiple origins in development
-const allowedOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',')
-  : ['http://localhost:3000', 'http://localhost:3001'];
+
 
 app.use(cors({
   origin: (origin, callback) => {
