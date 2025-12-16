@@ -3,7 +3,10 @@ import {
   getSlideComments,
   createComment,
   getSlideDiscussion,
-  deleteComment
+  deleteComment,
+  getDiscussionTopics,
+  getDiscussionActivities,
+  searchComments
 } from '../controllers/discussionController.js';
 
 const router = express.Router();
@@ -46,5 +49,30 @@ router.post('/slides/:slideId/comments', createComment);
  *   - userId: Current user ID (required)
  */
 router.delete('/comments/:commentId', deleteComment);
+
+/**
+ * GET /api/discussions/slides/:slideId/topics
+ * Get discussion topics for a slide
+ */
+router.get('/slides/:slideId/topics', getDiscussionTopics);
+
+/**
+ * GET /api/discussions/slides/:slideId/activities
+ * Get recent activities for a slide discussion
+ * Query params:
+ *   - limit: Maximum items to return (default: 10)
+ */
+router.get('/slides/:slideId/activities', getDiscussionActivities);
+
+/**
+ * GET /api/discussions/slides/:slideId/comments/search
+ * Search and filter comments
+ * Query params:
+ *   - keyword: Search keyword
+ *   - minRating: Minimum rating (1-5)
+ *   - page: Page number (default: 1)
+ *   - limit: Items per page (default: 20)
+ */
+router.get('/slides/:slideId/comments/search', searchComments);
 
 export default router;
