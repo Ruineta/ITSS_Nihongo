@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authRoutes from './routes/authRoutes.js';
 import slideRankingRoutes from './routes/slideRankingRoutes.js';
 import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import slideUploadRoutes from './routes/slideUploadRoutes.js';
@@ -29,7 +30,7 @@ const allowedOrigins = [
 ];
 
 // Middleware
-
+// CORS configuration - allow multiple origins in development
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -81,6 +82,7 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     endpoints: {
       health: '/health',
+      auth: '/api/auth',
       slideSearch: '/api/slides/search',
       slideDetail: '/api/slides/:id',
       slideUpload: '/api/slides/upload',
@@ -91,6 +93,9 @@ app.get('/api', (req, res) => {
     }
   });
 });
+
+// Mount authentication routes
+app.use('/api/auth', authRoutes);
 
 // Mount slide upload routes (must be before /api/slides to avoid conflicts)
 app.use('/api/slides', slideUploadRoutes);

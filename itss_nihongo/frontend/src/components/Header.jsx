@@ -1,12 +1,14 @@
-import React, {useState} from "react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
-const Header = ({ onLogout }) => {
+const Header = () => {
+    const { user, logout, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+
     const handleLogout = () => {
-        if (onLogout) {
-            onLogout();
-        } else {
-            alert('ログアウトしました');
-        }
+        logout();
+        navigate('/auth');
     };
 
     return (
@@ -14,12 +16,21 @@ const Header = ({ onLogout }) => {
             <div className="text-2xl font-semibold text-blue-500">
                 教師サポートHub
             </div>
-            <button
-                onClick={handleLogout}
-                className="px-5 py-2 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50 transition-colors"
-            >
-                ログアウト
-            </button>
+            {isAuthenticated ? (
+                <button
+                    onClick={handleLogout}
+                    className="px-5 py-2 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50 transition-colors"
+                >
+                    ログアウト
+                </button>
+            ) : (
+                <button
+                    onClick={() => navigate('/auth')}
+                    className="px-5 py-2 border border-gray-300 bg-white rounded-md text-sm hover:bg-gray-50 transition-colors"
+                >
+                    ログイン
+                </button>
+            )}
         </header>
     );
 };
