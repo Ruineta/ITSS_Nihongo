@@ -304,7 +304,7 @@ export const updateSlideFeedback = async (req, res) => {
         success: false,
         message: 'Rating not found'
       });
-    }
+    } 
 
     res.json({
       success: true,
