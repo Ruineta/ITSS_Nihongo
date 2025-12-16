@@ -1,6 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const SlideDetailModal = ({ slide, isOpen, onClose }) => {
+const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
+    const [isRatingOpen, setIsRatingOpen] = useState(false);
+    const [ratingScore, setRatingScore] = useState(50);
+    const [ratingFeedback, setRatingFeedback] = useState('');
+
     // Close modal on ESC key
     useEffect(() => {
         const handleEsc = (e) => {
@@ -15,6 +19,15 @@ const SlideDetailModal = ({ slide, isOpen, onClose }) => {
             document.body.style.overflow = 'unset';
         };
     }, [isOpen, onClose]);
+
+    // Reset rating modal state when opening a new slide
+    useEffect(() => {
+        if (isOpen && slide) {
+            setIsRatingOpen(false);
+            setRatingScore(slide.userRating || 50);
+            setRatingFeedback(slide.userFeedback || '');
+        }
+    }, [isOpen, slide]);
 
     if (!isOpen || !slide) return null;
 
@@ -167,6 +180,17 @@ const SlideDetailModal = ({ slide, isOpen, onClose }) => {
                                 <p className="text-gray-700 leading-relaxed">
                                     {description || 'このスライドには説明がありません。'}
                                 </p>
+
+                                {/* Rating button */}
+                                <div className="mt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRatingOpen(true)}
+                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        評価する
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Tags */}
@@ -238,6 +262,83 @@ const SlideDetailModal = ({ slide, isOpen, onClose }) => {
                     animation: slideUp 0.3s ease-out;
                 }
             `}</style>
+
+            {/* Rating Modal (inside detail modal) */}
+            {isRatingOpen && (
+                <div className="fixed inset-0 z-60 flex items-center justify-center">
+                    {/* Backdrop for rating modal only */}
+                    <div
+                        className="absolute inset-0 bg-black bg-opacity-40"
+                        onClick={() => setIsRatingOpen(false)}
+                    />
+
+                    <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                            このスライドを評価してください
+                        </h3>
+
+                        {/* Score slider */}
+                        <div className="mb-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm text-gray-600">難易度スコア:</span>
+                                <span className="text-2xl font-bold text-gray-800">
+                                    {ratingScore}/100
+                                </span>
+                            </div>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={ratingScore}
+                                onChange={(e) => setRatingScore(Number(e.target.value))}
+                                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>簡単</span>
+                                <span>普通</span>
+                                <span>難しい</span>
+                                <span>非常に難しい</span>
+                            </div>
+                        </div>
+
+                        {/* Feedback textarea */}
+                        <div className="mb-4">
+                            <label className="block text-sm text-gray-600 mb-2">
+                                フィードバック (任意):
+                            </label>
+                            <textarea
+                                value={ratingFeedback}
+                                onChange={(e) => setRatingFeedback(e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                placeholder="このスライドについてのご意見をお聞かせください..."
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsRatingOpen(false)}
+                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (onRate) {
+                                        await onRate(slide.id, ratingScore, ratingFeedback);
+                                    }
+                                    setIsRatingOpen(false);
+                                }}
+                                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
+                            >
+                                評価を送信
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

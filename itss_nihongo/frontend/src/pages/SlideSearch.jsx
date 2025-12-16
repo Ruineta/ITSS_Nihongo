@@ -5,7 +5,7 @@ import SearchFilter from '../components/SearchFilter';
 import SlideCard from '../components/SlideCard';
 import SlideDetailModal from '../components/SlideDetailModal';
 import useDebounce from '../hooks/useDebounce';
-import { searchSlides } from '../services/slideService';
+import { searchSlides, rateSlide } from '../services/slideService';
 
 const SlideSearch = () => {
     // State management
@@ -51,6 +51,20 @@ const SlideSearch = () => {
     const handleModalClose = () => {
         setIsModalOpen(false);
         setTimeout(() => setSelectedSlide(null), 300);
+    };
+
+    // Handle rating from detail modal
+    const handleRateInSearch = async (slideId, score, feedback) => {
+        try {
+            await rateSlide(slideId, score, feedback);
+            alert('評価を送信しました');
+
+            // Optionally refresh search results to reflect new difficulty
+            await fetchSlides();
+        } catch (err) {
+            console.error('Error rating slide from search:', err);
+            alert('評価の送信に失敗しました。もう一度お試しください。');
+        }
     };
 
     // Fetch slides (API call)
@@ -219,6 +233,7 @@ const SlideSearch = () => {
                 slide={selectedSlide}
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
+                onRate={handleRateInSearch}
             />
         </div>
     );

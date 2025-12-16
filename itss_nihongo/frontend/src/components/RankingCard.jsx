@@ -12,7 +12,8 @@ import { TrendingUp } from 'lucide-react';
  * @param {Function} props.onFeedback - Callback when user updates feedback
  */
 const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
-    const [showRating, setShowRating] = useState(!slide.isRated);
+    // Rating form is hidden by default; user must click the button to edit
+    const [showRating, setShowRating] = useState(false);
     const [selectedScore, setSelectedScore] = useState( slide.userRating|| slide.difficultyScore);
     const [analyst, setAnalyst] = useState(slide.analysisPoints);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
@@ -63,34 +64,41 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-4 hover:shadow-md transition-shadow">
-            {/* Header */}
-            <div className="flex items-start gap-4">
-                {/* Rank Badge */}
-                <div className="flex-shrink-0">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                        rank === 1 ? 'bg-orange-500' :
-                            rank === 2 ? 'bg-gray-400' :
-                                rank === 3 ? 'bg-amber-600' :
-                                    'bg-gray-300'
-                    }`}>
-                        #{rank}
-                    </div>
-                </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 hover:shadow-md transition-shadow">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          {/* Rank Badge */}
+          <div className="flex-shrink-0">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-base ${
+                rank === 1
+                  ? 'bg-orange-500'
+                  : rank === 2
+                  ? 'bg-gray-400'
+                  : rank === 3
+                  ? 'bg-amber-600'
+                  : 'bg-gray-300'
+              }`}
+            >
+              #{rank}
+            </div>
+          </div>
 
-                <div className="flex-1">
-                    {/* Title and Subject */}
-                    <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{slide.title}</h3>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                            {slide.subject}
-                        </span>
-                    </div>
+          <div className="flex-1">
+        {/* Title and Subject */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <h3 className="text-base md:text-lg font-bold text-gray-900">
+            {slide.title}
+          </h3>
+          <span className="px-2.5 py-0.5 bg-gray-100 text-gray-700 text-xs md:text-sm rounded-full">
+            {slide.subject}
+          </span>
+        </div>
 
                     {/* Description */}
-                    {slide.description && (
-                        <p className="text-sm text-gray-600 mb-3">{slide.description}</p>
-                    )}
+        {slide.description && (
+          <p className="text-sm text-gray-600 mb-2">{slide.description}</p>
+        )}
 
                     {/* Author and Stats */}
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -105,19 +113,37 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                     </div>
 
                     {/* Current Difficulty Score Bar */}
-                    <div className="mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium text-gray-700">理解難易度スコア</span>
-                            <span className={`text-lg font-bold ${getScoreColor(slide.difficultyScore)}`}>
-                                {slide.difficultyScore}/100
-                            </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                                className={`bg-gradient-to-r ${getScoreGradient(slide.difficultyScore)} h-2 rounded-full transition-all`}
-                                style={{ width: `${slide.difficultyScore}%` }}
-                            />
-                        </div>
+        <div className="mb-3">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-xs md:text-sm font-medium text-gray-700">
+              理解難易度スコア
+            </span>
+            <span
+              className={`text-base md:text-lg font-bold ${getScoreColor(
+                slide.difficultyScore
+              )}`}
+            >
+              {slide.difficultyScore}/100
+            </span>
+          </div>
+          <div className="bg-gray-200 rounded-full h-2 mx-auto" style={{ width: '70%' }}>
+            <div
+              className={`bg-gradient-to-r ${getScoreGradient(
+                slide.difficultyScore
+              )} h-2 rounded-full transition-all`}
+              style={{ width: `${slide.difficultyScore}%` }}
+            />
+          </div>
+        </div>
+
+                    {/* Button to enable rating (view-only by default) */}
+                    <div className="flex justify-end mb-4">
+                        <button
+                            onClick={() => setShowRating(true)}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            {slide.isRated ? '評価を編集' : '評価する'}
+                        </button>
                     </div>
 
                     {/* Analysis Points - Show if rated or has analysis points */}
@@ -135,7 +161,7 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                         </div>
                     )}
 
-                    {/* Rating Section - Before Rating */}
+                    {/* Rating Section - Only shown after clicking the button */}
                     {showRating && (
                         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                             <h4 className="font-medium text-gray-900 mb-3">このスライドを評価してください</h4>
@@ -190,17 +216,26 @@ const RankingCard = ({ slide, rank, onRate, onFeedback }) => {
                                 />
                             </div>
 
-                            <button
-                                onClick={handleSubmitRating}
-                                disabled={selectedScore === 0}
-                                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                    selectedScore === 0
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                                }`}
-                            >
-                                評価を送信
-                            </button>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleSubmitRating}
+                                    disabled={selectedScore === 0}
+                                    className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                                        selectedScore === 0
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                >
+                                    評価を送信
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRating(false)}
+                                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                                >
+                                    キャンセル
+                                </button>
+                            </div>
                         </div>
                     )}
 
