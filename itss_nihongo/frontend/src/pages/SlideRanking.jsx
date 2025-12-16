@@ -1,14 +1,15 @@
-import React, {useCallback, useState} from "react";
-import {TrendingUp} from 'lucide-react';
+import React, { useCallback, useState } from "react";
+import { TrendingUp } from 'lucide-react';
 import RankingCard from "../components/RankingCard";
 import Navigation from "../components/Navigation";
 import Header from "../components/Header";
+import { getSubjects } from "../services/slideService";
 
 const API_BASE = process.env.REACT_APP_API_BASE || '';
 
 const SlideRanking = () => {
-    const[activeTab, setActiveTab] = useState('難解ランキング');
-    const[loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('難解ランキング');
+    const [loading, setLoading] = useState(true);
 
     // Use real data by default; toggle to mock only when backend is unavailable
     const [useMockData, setUseMockData] = useState(false);
@@ -42,15 +43,21 @@ const SlideRanking = () => {
         }
     ], []);
 
-    const[slides, setSlides] = useState(useMockData ? mockSlides :[]);
-    const[error, setError] = useState(null);
-    const[pagination, setPagination] = useState({
+    const [slides, setSlides] = useState(useMockData ? mockSlides : []);
+    const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({
         total: 0,
         limit: 10,
         offset: 0,
         hasMore: false,
     });
-    const[stats, setStats] = useState(null);
+    const [stats, setStats] = useState(null);
+
+    // Filter UI state
+    const [filterType, setFilterType] = useState('difficultyScore'); // 'difficultyScore' | 'subject'
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc' for difficultyScore
+    const [subjectOptions, setSubjectOptions] = useState(['全て']);
+    const [selectedSubject, setSelectedSubject] = useState('全て');
 
     const handleLogout = () => {
         alert('ログアウトしました');
@@ -163,8 +170,27 @@ const SlideRanking = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [useMockData]);
 
+    // Fetch subjects for subject filter
+    React.useEffect(() => {
+        const loadSubjects = async () => {
+            try {
+                const result = await getSubjects();
+                if (result.success && Array.isArray(result.data)) {
+                    const names = result.data.map((s) =>
+                        typeof s === 'string' ? s : s.name || s.subject || ''
+                    ).filter(Boolean);
+                    setSubjectOptions(['全て', ...Array.from(new Set(names))]);
+                }
+            } catch (e) {
+                console.error('科目リストの取得に失敗しました:', e);
+                // fallback: derive from current slides when available
+            }
+        };
+        void loadSubjects();
+    }, []);
+
     const handleLoadMore = () => {
-        if(pagination.hasMore){
+        if (pagination.hasMore) {
             void fetchSlides(pagination.offset + pagination.limit);
         }
     };
@@ -242,6 +268,25 @@ const SlideRanking = () => {
         }
     };
 
+    // Apply filter / sort to slides before rendering
+    const displayedSlides = React.useMemo(() => {
+        let result = [...slides];
+
+        if (filterType === 'difficultyScore') {
+            result.sort((a, b) =>
+                sortOrder === 'asc'
+                    ? (a.difficultyScore || 0) - (b.difficultyScore || 0)
+                    : (b.difficultyScore || 0) - (a.difficultyScore || 0)
+            );
+        } else if (filterType === 'subject') {
+            if (selectedSubject && selectedSubject !== '全て') {
+                result = result.filter((slide) => slide.subject === selectedSubject);
+            }
+        }
+
+        return result;
+    }, [slides, filterType, sortOrder, selectedSubject]);
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header onLogout={handleLogout} />
@@ -273,7 +318,7 @@ const SlideRanking = () => {
                         </div>
                     )}
                 {/* Header Section */}
-                <div className="bg-orange-50 rounded-lg p-6 mb-6 border-l-4 border-orange-500">
+                <div className="bg-orange-50 rounded-lg p-6 mb-4 border-l-4 border-orange-500">
                     <div className="flex items-center gap-3 mb-2">
                         <TrendingUp className="w-6 h-6 text-orange-600" />
                         <h2 className="text-2xl font-bold text-gray-900">難解スライドランキング</h2>
@@ -281,6 +326,56 @@ const SlideRanking = () => {
                     <p className="text-gray-700">
                         学生のフィードバックと教師間の議論をもとに、最も理解しづらいスライドをランキング表示
                     </p>
+                </div>
+
+                {/* Filter Section */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
+                    {/* Box 1: filter type */}
+                    <div className="w-full md:w-1/3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            フィルター種類
+                        </label>
+                        <select
+                            value={filterType}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setFilterType(value);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="difficultyScore">難易度スコア</option>
+                            <option value="subject">科目</option>
+                        </select>
+                    </div>
+
+                    {/* Box 2: dependent on box 1 */}
+                    <div className="w-full md:w-1/3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            条件
+                        </label>
+                        {filterType === 'difficultyScore' ? (
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="asc">難易度が低い順</option>
+                                <option value="desc">難易度が高い順</option>
+                            </select>
+                        ) : (
+                            <select
+                                value={selectedSubject}
+                                onChange={(e) => setSelectedSubject(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                {subjectOptions.map((subj) => (
+                                    <option key={subj} value={subj}>
+                                        {subj}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
 
                 {/* Statistics Section */}
@@ -334,11 +429,11 @@ const SlideRanking = () => {
                                     <p className="text-lg">表示するスライドがありません</p>
                                 </div>
                             ) : (
-                                slides.map((slide, index) => (
+                                displayedSlides.map((slide, index) => (
                                     <RankingCard
                                         key={slide.id}
                                         slide={slide}
-                                        rank={pagination.offset + index + 1}
+                                        rank={index + 1}
                                         onRate={handleRate}
                                         onFeedback={handleFeedback}
                                     />
