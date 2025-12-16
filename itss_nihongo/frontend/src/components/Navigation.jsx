@@ -1,6 +1,5 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import App from "../App";
 
 const Navigation = () => {
     const navigate = useNavigate();
