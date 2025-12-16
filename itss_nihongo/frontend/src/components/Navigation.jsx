@@ -8,7 +8,7 @@ const Navigation = () => {
     const navItems = [
         { label: 'スライド検索', path: '/search' },
         { label: 'アップロード', path: '/upload' },
-        { label: 'ディスカッション', path: '/discussion/1' },
+        { label: 'ディスカッション', path: '/discussion' },
         { label: 'ノウハウ共有', path: '/exp-share' },
         { label: '難解ランキング', path: '/ranking' },
         { label: 'プロフィール', path: '/profile' }
