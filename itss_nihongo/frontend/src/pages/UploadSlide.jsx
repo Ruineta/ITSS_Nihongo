@@ -56,15 +56,40 @@ const UploadSlide = () => {
         alert('ログアウトしました');
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!file || !title) {
             alert('ファイルとタイトルを入力してください');
             return;
         }
-        alert(`スライドがアップロードされました: ${title}`);
-        // リセット
-        setFile(null);
-        setTitle('');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', title);
+        // Add other fields as needed
+        // formData.append('description', 'This is a test description');
+        // formData.append('subject_id', 1);
+        // formData.append('difficulty_level', '初級');
+
+        try {
+            const response = await fetch('http://localhost:5001/api/slides/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`スライドがアップロードされました: ${data.data.title}`);
+                // リセット
+                setFile(null);
+                setTitle('');
+            } else {
+                alert(`エラー: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('アップロード中にエラーが発生しました');
+        }
     };
 
     const getFileIcon = (fileName) => {

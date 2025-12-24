@@ -5,10 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import slideRankingRoutes from './routes/slideRankingRoutes.js';
-import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import slideUploadRoutes from './routes/slideUploadRoutes.js';
-import discussionRoutes from './routes/discussionRoutes.js';
-import systemRoutes from './routes/systemRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
 import pool from './config/database.js';
@@ -50,8 +47,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// Serve static files (uploaded slides and thumbnails)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files for uploads
+app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -97,20 +94,11 @@ app.get('/api', (req, res) => {
 // Mount authentication routes
 app.use('/api/auth', authRoutes);
 
-// Mount slide upload routes (must be before /api/slides to avoid conflicts)
-app.use('/api/slides', slideUploadRoutes);
-
-// Mount slide search routes
-app.use('/api/slides', slideSearchRoutes);
-
 // Mount slide ranking routes
 app.use('/api/slides/ranking', slideRankingRoutes);
 
-// Mount discussion routes
-app.use('/api/discussions', discussionRoutes);
-
-// Mount system routes
-app.use('/api/system', systemRoutes);
+// Mount slide upload routes
+app.use('/api/slides', slideUploadRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
