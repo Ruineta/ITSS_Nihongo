@@ -392,7 +392,8 @@ export const getArticles = async (req, res) => {
             DISTINCT jsonb_build_object('id', t.id, 'name', t.name)
           ) FILTER (WHERE t.id IS NOT NULL),
           '[]'
-        ) as tags
+        ) as tags,
+        (SELECT COUNT(*) FROM know_how_comments WHERE article_id = ka.id) as comment_count
       FROM know_how_articles ka
       LEFT JOIN users u ON ka.user_id = u.id
       LEFT JOIN know_how_tags kht ON ka.id = kht.article_id
@@ -415,6 +416,7 @@ export const getArticles = async (req, res) => {
       school: article.school,
       isPublic: article.is_public,
       tags: article.tags,
+      commentCount: parseInt(article.comment_count) || 0,
       createdAt: article.created_at,
       updatedAt: article.updated_at
     }));

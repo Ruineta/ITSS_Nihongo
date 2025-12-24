@@ -48,7 +48,7 @@ const ExpShare = () => {
                 content: article.content,
                 tags: article.tags ? article.tags.map(tag => typeof tag === 'string' ? tag : tag.name) : [],
                 likes: 0,
-                comments: 0,
+                comments: article.commentCount || 0,
                 createdAt: article.createdAt
             }));
             
