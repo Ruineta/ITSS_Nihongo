@@ -5,7 +5,6 @@ import knowhowReactionsService from "../services/knowhowReactionsService";
 
 const PostCard = ({ post }) => {
     const { user, token } = useAuth();
-    const [isBookmarked, setIsBookmarked] = useState(false);
     const [showReactions, setShowReactions] = useState(false);
     const [reactionCounts, setReactionCounts] = useState(post.reactionCounts || {
         love: 0,
@@ -20,6 +19,7 @@ const PostCard = ({ post }) => {
     const [showComments, setShowComments] = useState(false);
     const [comments, setComments] = useState([]);
     const [loadingComments, setLoadingComments] = useState(false);
+    const [commentCount, setCommentCount] = useState(post.comments || 0);
     const [newComment, setNewComment] = useState('');
     const [leaveTimer, setLeaveTimer] = useState(null);
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -67,6 +67,7 @@ const PostCard = ({ post }) => {
             const response = await knowhowCommentsService.getArticleComments(post.id, { limit: 50 });
             if (response.success) {
                 setComments(response.data);
+                setCommentCount(response.data.length);
             }
         } catch (error) {
             console.error('Error loading comments:', error);
@@ -160,11 +161,6 @@ const PostCard = ({ post }) => {
             clearTimeout(pressTimer);
             setPressTimer(null);
         }
-    };
-
-    //Code logic handleBookmark ở đây
-    const handleBookmark = () => {
-        setIsBookmarked(!isBookmarked);
     };
 
     //Code logic handleComment ở đây
@@ -278,12 +274,6 @@ const PostCard = ({ post }) => {
                         </div>
                     </div>
                 </div>
-                <span
-                    onClick={handleBookmark}
-                    className="cursor-pointer text-lg hover:scale-110 transition-transform flex-shrink-0"
-                >
-                    {isBookmarked ? '📌' : '🔖'}
-                </span>
             </div>
 
             <div className="text-sm leading-relaxed text-left text-gray-700 mb-4">
@@ -369,7 +359,7 @@ const PostCard = ({ post }) => {
                     className="flex items-center gap-1.5 cursor-pointer hover:text-blue-600 transition-colors"
                 >
                     <span className="text-base">💬</span>
-                    <span className="font-medium">{comments.length}</span>
+                    <span className="font-medium">{commentCount}</span>
                     <span className="text-xs">コメント{showComments ? 'を隠す' : ''}</span>
                 </button>
             </div>
