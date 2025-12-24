@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import knowhowCommentsService from "../services/knowhowCommentsService";
+import knowhowReactionsService from "../services/knowhowReactionsService";
 
 const PostCard = ({ post }) => {
+    const { user, token } = useAuth();
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [showReactions, setShowReactions] = useState(false);
     const [reactionCounts, setReactionCounts] = useState(post.reactionCounts || {
@@ -11,12 +15,65 @@ const PostCard = ({ post }) => {
         sad: 0,
         angry: 0
     });
-    const [userReaction, setUserReaction] = useState(null); // Single reaction user has selected
+    const [userReaction, setUserReaction] = useState(null);
     const [pressTimer, setPressTimer] = useState(null);
     const [showComments, setShowComments] = useState(false);
-    const [comments, setComments] = useState(post.commentsList || []);
+    const [comments, setComments] = useState([]);
+    const [loadingComments, setLoadingComments] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [leaveTimer, setLeaveTimer] = useState(null);
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [expandedReplies, setExpandedReplies] = useState({});
+    const [replies, setReplies] = useState({});
+    const [loadingReplies, setLoadingReplies] = useState({});
+    const [newReplies, setNewReplies] = useState({});
+    const [submittingReplies, setSubmittingReplies] = useState({});
+
+    // Fetch comments and reactions on mount
+    useEffect(() => {
+        fetchReactions();
+    }, [post.id]);
+
+    // Fetch comments when showing comments section
+    useEffect(() => {
+        if (showComments && comments.length === 0 && !loadingComments) {
+            fetchComments();
+        }
+    }, [showComments]);
+
+    const fetchReactions = async () => {
+        try {
+            // Load reaction counts and user's reaction
+            const [reactionsRes, userReactionRes] = await Promise.all([
+                knowhowReactionsService.getArticleReactions(post.id),
+                token ? knowhowReactionsService.getUserReaction(post.id, token) : Promise.resolve({ success: true, data: { reaction_type: null } })
+            ]);
+
+            if (reactionsRes.success) {
+                setReactionCounts(reactionsRes.data);
+            }
+            
+            if (userReactionRes.success && userReactionRes.data.reaction_type) {
+                setUserReaction(userReactionRes.data.reaction_type);
+            }
+        } catch (error) {
+            console.error('Error loading reactions:', error);
+        }
+    };
+
+    const fetchComments = async () => {
+        try {
+            setLoadingComments(true);
+            const response = await knowhowCommentsService.getArticleComments(post.id, { limit: 50 });
+            if (response.success) {
+                setComments(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading comments:', error);
+        } finally {
+            setLoadingComments(false);
+        }
+    };
 
     const reactions = [
         { emoji: '❤️', name: 'love', color: 'text-red-500' },
@@ -39,44 +96,36 @@ const PostCard = ({ post }) => {
     };
 
     //Code logic handlelike ở đây
-    const handleLike = () => {
-        if (userReaction) {
-            // Remove current reaction
-            setReactionCounts({
-                ...reactionCounts,
-                [userReaction]: Math.max(0, reactionCounts[userReaction] - 1)
-            });
-            setUserReaction(null);
-        } else {
-            // Add default heart reaction
-            setReactionCounts({
-                ...reactionCounts,
-                love: reactionCounts.love + 1
-            });
-            setUserReaction('love');
+    const handleLike = async () => {
+        if (!user || !token) {
+            alert('ログインしてください');
+            return;
+        }
+
+        try {
+            const reactionToSend = userReaction ? userReaction : 'love';
+            await knowhowReactionsService.addReaction(post.id, reactionToSend, token);
+            await fetchReactions(); // Refresh reactions
+        } catch (error) {
+            console.error('Error toggling like:', error);
+            alert(error.message || 'リアクション操作に失敗しました');
         }
     };
 
-    const handleReactionSelect = (reaction) => {
-        const newCounts = { ...reactionCounts };
-        
-        if (userReaction === reaction.name) {
-            // Remove this reaction if clicking the same one
-            newCounts[reaction.name] = Math.max(0, newCounts[reaction.name] - 1);
-            setUserReaction(null);
-        } else {
-            // Remove old reaction if exists
-            if (userReaction) {
-                newCounts[userReaction] = Math.max(0, newCounts[userReaction] - 1);
-            }
-            
-            // Add new reaction
-            newCounts[reaction.name] = newCounts[reaction.name] + 1;
-            setUserReaction(reaction.name);
+    const handleReactionSelect = async (reaction) => {
+        if (!user || !token) {
+            alert('ログインしてください');
+            return;
         }
-        
-        setReactionCounts(newCounts);
-        setShowReactions(false); // Close popup after selection
+
+        try {
+            await knowhowReactionsService.addReaction(post.id, reaction.name, token);
+            await fetchReactions(); // Refresh reactions
+            setShowReactions(false);
+        } catch (error) {
+            console.error('Error selecting reaction:', error);
+            alert(error.message || 'リアクション操作に失敗しました');
+        }
     };
 
     const handleMouseDown = () => {
@@ -123,20 +172,29 @@ const PostCard = ({ post }) => {
         setShowComments(!showComments);
     };
 
-    const handleAddComment = () => {
-        if (newComment.trim()) {
-            const comment = {
-                author: 'ユーザー',
-                content: newComment,
-                timestamp: new Date().toLocaleString('ja-JP', {
-                    month: 'numeric',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
-            };
-            setComments([...comments, comment]);
-            setNewComment('');
+    const handleAddComment = async () => {
+        if (!newComment.trim()) return;
+
+        if (!user || !token) {
+            alert('ログインしてください');
+            return;
+        }
+
+        setIsSubmittingComment(true);
+        try {
+            const response = await knowhowCommentsService.createComment(post.id, newComment, token);
+            if (response.success) {
+                // Refresh comments
+                await fetchComments();
+                setNewComment('');
+            } else {
+                alert(`エラー: ${response.message || 'コメント投稿に失敗しました'}`);
+            }
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            alert(error.message || 'コメント投稿に失敗しました');
+        } finally {
+            setIsSubmittingComment(false);
         }
     };
 
@@ -144,6 +202,63 @@ const PostCard = ({ post }) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleAddComment();
+        }
+    };
+
+    const fetchReplies = async (commentId) => {
+        if (replies[commentId]) return;
+        try {
+            setLoadingReplies(prev => ({ ...prev, [commentId]: true }));
+            const response = await knowhowCommentsService.getCommentReplies(post.id, commentId);
+            if (response.success) {
+                setReplies(prev => ({ ...prev, [commentId]: response.data }));
+            }
+        } catch (error) {
+            console.error('Error loading replies:', error);
+        } finally {
+            setLoadingReplies(prev => ({ ...prev, [commentId]: false }));
+        }
+    };
+
+    const handleToggleReplies = (commentId) => {
+        if (!expandedReplies[commentId]) {
+            fetchReplies(commentId);
+        }
+        setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }));
+    };
+
+    const handleAddReply = async (commentId) => {
+        if (!newReplies[commentId]?.trim()) return;
+
+        if (!user || !token) {
+            alert('ログインしてください');
+            return;
+        }
+
+        try {
+            setSubmittingReplies(prev => ({ ...prev, [commentId]: true }));
+            const response = await knowhowCommentsService.createReply(post.id, commentId, newReplies[commentId], token);
+            if (response.success) {
+                setReplies(prev => ({
+                    ...prev,
+                    [commentId]: [...(prev[commentId] || []), response.data]
+                }));
+                setNewReplies(prev => ({ ...prev, [commentId]: '' }));
+            } else {
+                alert(`エラー: ${response.message || '返信投稿に失敗しました'}`);
+            }
+        } catch (error) {
+            console.error('Error posting reply:', error);
+            alert(error.message || '返信投稿に失敗しました');
+        } finally {
+            setSubmittingReplies(prev => ({ ...prev, [commentId]: false }));
+        }
+    };
+
+    const handleKeyPressReply = (e, commentId) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleAddReply(commentId);
         }
     };
 
@@ -262,11 +377,18 @@ const PostCard = ({ post }) => {
             {/* Comments Section */}
             {showComments && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
+                    {/* Loading State */}
+                    {loadingComments ? (
+                        <div className="text-center py-4">
+                            <p className="text-gray-500 text-sm">コメント読み込み中...</p>
+                        </div>
+                    ) : (
+                        <>
                     {/* Comments List */}
                     {comments.length > 0 && (
-                        <div className="space-y-3 mb-4">
-                            {comments.map((comment, index) => (
-                                <div key={index} className="flex gap-2">
+                        <div className="space-y-4 mb-4">
+                            {comments.map((comment) => (
+                                <div key={comment.id} className="flex gap-2">
                                     <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0">
                                         {comment.author[0]}
                                     </div>
@@ -279,9 +401,75 @@ const PostCard = ({ post }) => {
                                                 {comment.content}
                                             </p>
                                         </div>
-                                        <div className="text-xs text-gray-500 mt-1 ml-3 text-left">
-                                            {comment.timestamp}
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-1 ml-3 text-left">
+                                            <span>{comment.timestamp}</span>
+                                            <button
+                                                onClick={() => handleToggleReplies(comment.id)}
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                {expandedReplies[comment.id] ? '返信を隠す' : (comment.replyCount > 0 ? `返信 (${comment.replyCount})` : '返信')}
+                                            </button>
                                         </div>
+
+                                        {/* Replies Section */}
+                                        {expandedReplies[comment.id] && (
+                                            <div className="mt-3 pl-4 border-l-2 border-gray-200 space-y-3">
+                                                {loadingReplies[comment.id] ? (
+                                                    <p className="text-xs text-gray-500">返信読み込み中...</p>
+                                                ) : (
+                                                    <>
+                                                        {(replies[comment.id] || []).map((reply) => (
+                                                            <div key={reply.id} className="flex gap-2">
+                                                                <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center text-xs font-semibold text-blue-600 flex-shrink-0">
+                                                                    {reply.author[0]}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <div className="bg-blue-50 rounded-xl px-2.5 py-1.5 text-left w-fit">
+                                                                        <div className="text-xs font-semibold text-gray-900 text-left">
+                                                                            {reply.author}
+                                                                        </div>
+                                                                        <p className="text-xs text-gray-700 text-left">
+                                                                            {reply.content}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 mt-0.5 ml-2 text-left">
+                                                                        {reply.timestamp}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {/* Reply Input */}
+                                                        <div className="mt-3 flex gap-2 pt-2">
+                                                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 flex-shrink-0">
+                                                                {user?.full_name?.[0] || 'U'}
+                                                            </div>
+                                                            <div className="flex-1 flex gap-1.5">
+                                                                <input
+                                                                    type="text"
+                                                                    value={newReplies[comment.id] || ''}
+                                                                    onChange={(e) => setNewReplies(prev => ({ ...prev, [comment.id]: e.target.value }))}
+                                                                    onKeyPress={(e) => handleKeyPressReply(e, comment.id)}
+                                                                    placeholder="返信を書く..."
+                                                                    className="flex-1 px-3 py-1.5 bg-gray-100 rounded-full text-xs focus:outline-none focus:bg-gray-200"
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleAddReply(comment.id)}
+                                                                    disabled={!newReplies[comment.id]?.trim() || submittingReplies[comment.id]}
+                                                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                                                                        newReplies[comment.id]?.trim() && !submittingReplies[comment.id]
+                                                                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                                                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                                                    }`}
+                                                                >
+                                                                    {submittingReplies[comment.id] ? '送信中...' : '送信'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -304,17 +492,19 @@ const PostCard = ({ post }) => {
                             />
                             <button
                                 onClick={handleAddComment}
-                                disabled={!newComment.trim()}
+                                disabled={!newComment.trim() || isSubmittingComment}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                                    newComment.trim()
+                                    newComment.trim() && !isSubmittingComment
                                         ? 'bg-blue-600 text-white hover:bg-blue-700'
                                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                 }`}
                             >
-                                送信
+                                {isSubmittingComment ? '送信中...' : '送信'}
                             </button>
                         </div>
                     </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>

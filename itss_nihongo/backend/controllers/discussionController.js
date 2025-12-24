@@ -561,11 +561,7 @@ export const getDiscussionActivities = async (req, res) => {
         sc.type,
         sc.content,
         sc.created_at,
-        u.full_name as user,
-        COALESCE(
-          (SELECT AVG(rating) FROM slide_comment_ratings WHERE comment_id = sc.id),
-          0
-        ) as rating
+        u.full_name as user
       FROM slide_comments sc
       LEFT JOIN users u ON sc.user_id = u.id
       WHERE sc.slide_id = $1 AND sc.parent_id IS NULL
@@ -579,8 +575,7 @@ export const getDiscussionActivities = async (req, res) => {
       type: row.type === 'proposal' ? 'proposal' : 'comment',
       user: row.user || '匿名',
       timestamp: formatRelativeTime(row.created_at),
-      content: row.content,
-      rating: row.rating > 0 ? Math.round(row.rating * 10) / 10 : undefined
+      content: row.content
     }));
 
     return res.status(200).json({
@@ -717,32 +712,6 @@ export const searchComments = async (req, res) => {
 };
 
 // Helper functions
-
-/**
- * Format date to Japanese format (YYYY年MM月DD日)
- */
-function formatDate(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  return `${year}年${month}月${day}日`;
-}
-
-/**
- * Format date and time to Japanese format (YYYY年MM月DD日 HH:MM)
- */
-function formatDateTime(date) {
-  if (!date) return '';
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${year}年${month}月${day}日 ${hours}:${minutes}`;
-}
 
 /**
  * Format time relative to now (2時間前, etc.)

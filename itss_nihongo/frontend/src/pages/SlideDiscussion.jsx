@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Header";
 import Navigation from "../components/Navigation";
 import DiscussionLayout from "../components/DiscussionLayout";
@@ -13,7 +14,7 @@ import {
 
 const SlideDiscussion = () => {
   const { slideId: paramSlideId } = useParams();
-  // Always use slide 1, but allow override via route parameter
+  const { user, token } = useAuth();
   const slideId = paramSlideId || "1";
 
   // State management
@@ -286,7 +287,8 @@ const SlideDiscussion = () => {
       const response = await createComment(slideId, {
         content: newComment,
         type: "comment",
-        userId: 1, // TODO: Replace with actual user ID from auth
+        userId: user?.id,
+        token
       });
 
       if (response.success) {
@@ -369,11 +371,11 @@ const SlideDiscussion = () => {
         {/* Discussion Section with New Layout */}
         <div className="pt-0">
           <DiscussionLayout
-            slides={topicSlides}
-            comments={comments}
-            activities={recentActivities}
-            onSelectTopic={(slide) => console.log("Selected topic:", slide)}
-          />
+             slides={topicSlides}
+             comments={comments}
+             activities={recentActivities}
+             onSelectTopic={() => {}}
+           />
 
           {/* Comment Input Section */}
           <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
