@@ -5,7 +5,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import slideRankingRoutes from './routes/slideRankingRoutes.js';
+import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import slideUploadRoutes from './routes/slideUploadRoutes.js';
+import discussionRoutes from './routes/discussionRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
 import pool from './config/database.js';
@@ -99,6 +102,12 @@ app.use('/api/slides/ranking', slideRankingRoutes);
 
 // Mount slide upload routes
 app.use('/api/slides', slideUploadRoutes);
+
+// Mount discussion routes
+app.use('/api/discussions', discussionRoutes);
+
+// Mount system routes
+app.use('/api/system', systemRoutes);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
