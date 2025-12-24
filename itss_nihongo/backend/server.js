@@ -102,6 +102,9 @@ app.use('/api/auth', authRoutes);
 // Mount slide ranking routes
 app.use('/api/slides/ranking', slideRankingRoutes);
 
+// Mount slide search routes 
+app.use('/api/slides', slideSearchRoutes);
+
 // Mount slide upload routes
 app.use('/api/slides', slideUploadRoutes);
 
