@@ -9,6 +9,7 @@ import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import slideUploadRoutes from './routes/slideUploadRoutes.js';
 import discussionRoutes from './routes/discussionRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+import knowhowRoutes from './routes/knowhowRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/logger.js';
 import pool from './config/database.js';
@@ -89,7 +90,8 @@ app.get('/api', (req, res) => {
       slideFilters: '/api/slides/filters',
       slideRanking: '/api/slides/ranking',
       discussion: '/api/discussions/slides/:slideId',
-      discussionComments: '/api/discussions/slides/:slideId/comments'
+      discussionComments: '/api/discussions/slides/:slideId/comments',
+      knowhow: '/api/knowhow'
     }
   });
 });
@@ -108,6 +110,9 @@ app.use('/api/slides/ranking', slideRankingRoutes);
 
 // Mount discussion routes
 app.use('/api/discussions', discussionRoutes);
+
+// Mount knowledge-sharing article routes
+app.use('/api/knowhow', knowhowRoutes);
 
 // Mount system routes
 app.use('/api/system', systemRoutes);

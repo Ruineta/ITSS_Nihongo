@@ -1,4 +1,5 @@
 import express from 'express';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 import {
   getSlideComments,
   createComment,
@@ -40,7 +41,7 @@ router.get('/slides/:slideId/comments', getSlideComments);
  *   - type: 'comment' or 'proposal' (default: 'comment')
  *   - userId: Current user ID (required)
  */
-router.post('/slides/:slideId/comments', createComment);
+router.post('/slides/:slideId/comments', authenticateToken, createComment);
 
 /**
  * DELETE /api/discussions/comments/:commentId
@@ -48,7 +49,7 @@ router.post('/slides/:slideId/comments', createComment);
  * Body:
  *   - userId: Current user ID (required)
  */
-router.delete('/comments/:commentId', deleteComment);
+router.delete('/comments/:commentId', authenticateToken, deleteComment);
 
 /**
  * GET /api/discussions/slides/:slideId/topics
