@@ -4,6 +4,7 @@ import Header from '../components/Header.jsx';
 import Navigation from '../components/Navigation.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
 import { fetchUserProfile, fetchUserStats } from '../services/profileService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfessorProfile() {
   const [activeTab, setActiveTab] = useState('activity');
@@ -145,21 +146,24 @@ export default function ProfessorProfile() {
     setShowEditModal(false);
   };
 
-  const handleLogout =() => {
-    alert('ログアウトしました');
-
-  }
-
   const navigate = useNavigate();
 
   const handleRedirectClick = (path) => {
     navigate(path);
   }
+  
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    alert('ログアウトしました');
+    logout();
+    navigate('/auth');
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-5">
       {/* Header */}
-      <Header handleLogout={handleLogout} />
+      <Header onLogout={handleLogout} />
       {/* Navigation */}
       <Navigation setActiveTab = {setActiveTab} />
       <div className="max-w-6xl mx-auto">
@@ -398,6 +402,17 @@ export default function ProfessorProfile() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Logout Section */}
+        <div className="mt-8 p-6 bg-red-50 rounded-lg border border-red-100">
+          <h4 className="font-semibold text-gray-900 mb-4">アカウント設定</h4>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            ログアウト
+          </button>
         </div>
 
         {/* Edit Profile Modal */}
