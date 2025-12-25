@@ -37,17 +37,6 @@ export const uploadSlide = async (req, res) => {
       });
     }
 
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'application/vnd.ms-powerpoint', 
-                         'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
-    
-    if (!allowedTypes.includes(req.file.mimetype)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Only PDF and PowerPoint files are allowed'
-      });
-    }
-
     // Determine file type
     const fileType = req.file.mimetype === 'application/pdf' ? 'pdf' 
                    : req.file.originalname.endsWith('.pptx') ? 'pptx' 

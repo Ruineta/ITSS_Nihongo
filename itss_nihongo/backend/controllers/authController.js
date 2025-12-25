@@ -216,14 +216,16 @@ export const getCurrentUser = async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        schoolName: user.school_name,
-        specialization: user.specialization,
-        avatarUrl: user.avatar_url,
-        yearsOfExperience: user.years_of_experience,
-        createdAt: user.created_at
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.full_name,
+          schoolName: user.school_name,
+          specialization: user.specialization,
+          avatarUrl: user.avatar_url,
+          yearsOfExperience: user.years_of_experience,
+          createdAt: user.created_at
+        }
       }
     });
   } catch (error) {

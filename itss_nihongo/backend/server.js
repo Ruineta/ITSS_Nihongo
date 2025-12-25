@@ -52,8 +52,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
-// Serve static files (uploaded slides and thumbnails)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files for uploads
+app.use('/uploads', express.static('uploads'));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -103,14 +103,14 @@ app.get('/api', (req, res) => {
 // Mount authentication routes
 app.use('/api/auth', authRoutes);
 
-// Mount slide upload routes (must be before /api/slides to avoid conflicts)
-app.use('/api/slides', slideUploadRoutes);
-
-// Mount slide search routes
-app.use('/api/slides', slideSearchRoutes);
-
 // Mount slide ranking routes
 app.use('/api/slides/ranking', slideRankingRoutes);
+
+// Mount slide search routes 
+app.use('/api/slides', slideSearchRoutes);
+
+// Mount slide upload routes
+app.use('/api/slides', slideUploadRoutes);
 
 // Mount discussion routes
 app.use('/api/discussions', discussionRoutes);

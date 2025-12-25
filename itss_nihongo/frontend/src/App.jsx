@@ -20,7 +20,7 @@ function App() {
           <Route path='/exp-share' element={<ExpShare/>}/>
           <Route path='/upload' element={<UploadSlide/>}/>
           <Route path='/search' element={<SlideSearch/>}/>
-          <Route path='/discussion/1' element={<SlideDiscussion/>}/>
+          <Route path='/discussion' element={<SlideDiscussion/>}/>
           <Route path='/ranking' element={<SlideRanking/>}/>
           <Route path='/profile' element={<Profile/>}/>
         </Routes>

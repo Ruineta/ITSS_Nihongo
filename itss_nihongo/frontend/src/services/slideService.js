@@ -1,7 +1,7 @@
 // API Service cho Slide Search
 // Sử dụng real API calls để kết nối với backend
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 /**
  * Mock data cho development (not used - kept for reference)
