@@ -7,6 +7,7 @@ import UploadSlide from './pages/UploadSlide';
 import SlideRanking from "./pages/SlideRanking";
 import SlideSearch from './pages/SlideSearch';
 import SlideDiscussion from './pages/SlideDiscussion';
+import Profile from './pages/Profile';
 
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
           <Route path='/search' element={<SlideSearch/>}/>
           <Route path='/discussion' element={<SlideDiscussion/>}/>
           <Route path='/ranking' element={<SlideRanking/>}/>
-          <Route path='/profile' element={<ExpShare/>}/>
+          <Route path='/profile' element={<Profile/>}/>
         </Routes>
       </div>
     </AuthProvider>

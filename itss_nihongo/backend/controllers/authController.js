@@ -237,3 +237,59 @@ export const getCurrentUser = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get user statistics
+ * @route GET /api/auth/stats
+ */
+export const getUserStats = async (req, res) => {
+  try {
+    const userId = req.user.userId; // From auth middleware
+
+    // Query for slides uploaded by user
+    const slidesQuery = `SELECT COUNT(*) as count FROM slides WHERE user_id = $1`;
+    const slidesResult = await query(slidesQuery, [userId]);
+    const slidesUploaded = parseInt(slidesResult.rows[0].count);
+
+    // Query for articles posted in know_how_articles by user
+    const articlesQuery = `SELECT COUNT(*) as count FROM know_how_articles WHERE user_id = $1`;
+    const articlesResult = await query(articlesQuery, [userId]);
+    const articlesPosted = parseInt(articlesResult.rows[0].count);
+
+    // Query for comments posted by user (slide comments + know how comments)
+    const commentsQuery = `
+      SELECT 
+        (SELECT COUNT(*) FROM slide_comments WHERE user_id = $1) +
+        (SELECT COUNT(*) FROM know_how_comments WHERE user_id = $1) as count
+    `;
+    const commentsResult = await query(commentsQuery, [userId]);
+    const commentsPosted = parseInt(commentsResult.rows[0].count);
+
+    // Query for likes received on user's slides
+    const likesQuery = `
+      SELECT COUNT(*) as count
+      FROM slide_likes sl
+      JOIN slides s ON sl.slide_id = s.id
+      WHERE s.user_id = $1
+    `;
+    const likesResult = await query(likesQuery, [userId]);
+    const likesReceived = parseInt(likesResult.rows[0].count);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        slidesUploaded,
+        articlesPosted,
+        commentsPosted,
+        likesReceived
+      }
+    });
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'サーバーエラーが発生しました',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
