@@ -174,7 +174,7 @@ export default function ProfessorProfile() {
           </div>
           
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">{profileForm.fullName}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-3 text-left">{profileForm.fullName}</h1>
             
             <div className="flex items-center gap-2 mb-2 text-gray-600 text-sm">
               <svg className="w-4 h-4 opacity-70" viewBox="0 0 24 24" fill="currentColor">
@@ -207,7 +207,7 @@ export default function ProfessorProfile() {
             
             <button
               onClick={() => handleRedirectClick('/exp-share')} 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md text-sm font-bold transition-colors">
+              className="flex justify-start bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md text-sm font-bold transition-colors">
               ノウハウ共有
             </button>
           </div>
@@ -402,17 +402,6 @@ export default function ProfessorProfile() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Logout Section */}
-        <div className="mt-8 p-6 bg-red-50 rounded-lg border border-red-100">
-          <h4 className="font-semibold text-gray-900 mb-4">アカウント設定</h4>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-          >
-            ログアウト
-          </button>
         </div>
 
         {/* Edit Profile Modal */}
