@@ -17,11 +17,13 @@ const router = express.Router();
  * @query   {number} limit - Items per page (optional, default: 10, max: 100)
  * @query   {string} tag - Filter by tag name (optional)
  * @query   {string} author - Filter by author name (optional)
+ * @query   {number} user_id - Filter by user ID (optional)
  * 
  * @example
  * GET /api/knowhow?page=1&limit=10
  * GET /api/knowhow?tag=日本語
  * GET /api/knowhow?author=田中先生
+ * GET /api/knowhow?user_id=1
  * 
  * @response {200} OK
  * {

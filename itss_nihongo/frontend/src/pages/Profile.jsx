@@ -101,10 +101,14 @@ export default function ProfessorProfile() {
   const navigate = useNavigate();
 
   const handleRedirectClick = (path) => {
-    navigate(path);
+    if (path === '/exp-share' && user && user.id) {
+      navigate(`${path}?user_id=${user.id}`);
+    } else {
+      navigate(path);
+    }
   }
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
     alert('ログアウトしました');

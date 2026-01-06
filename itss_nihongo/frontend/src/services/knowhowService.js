@@ -104,6 +104,7 @@ export const getArticleById = async (id) => {
  * @param {number} params.limit - Items per page (optional)
  * @param {string} params.tag - Filter by tag (optional)
  * @param {string} params.author - Filter by author (optional)
+ * @param {number} params.userId - Filter by user ID (optional)
  * @returns {Promise<Object>} - Articles list
  */
 export const getArticles = async (params = {}) => {
@@ -124,6 +125,10 @@ export const getArticles = async (params = {}) => {
 
         if (params.author) {
             queryParams.append('author', params.author);
+        }
+
+        if (params.userId) {
+            queryParams.append('user_id', params.userId);
         }
 
         const queryString = queryParams.toString();

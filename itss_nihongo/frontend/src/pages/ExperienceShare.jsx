@@ -1,4 +1,5 @@
 import React, {useState, useEffect, useContext} from "react";
+import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
 import Navigation from "../components/Navigation";
@@ -7,6 +8,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 const ExpShare = () => {
     const { user, token } = useAuth();
+    const [searchParams] = useSearchParams();
+    const userIdFilter = searchParams.get('user_id');
     const [activeTab, setActiveTab] = useState('教師ノウハウ共有');
     const [showAddPostModal, setShowAddPostModal] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -35,7 +38,8 @@ const ExpShare = () => {
                 page, 
                 limit: 10,
                 tag: tag || undefined,
-                author: author || undefined
+                author: author || undefined,
+                userId: userIdFilter ? parseInt(userIdFilter) : undefined
             });
             
             // Transform API response to match PostCard format

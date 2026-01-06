@@ -330,11 +330,12 @@ export const getArticle = async (req, res) => {
  * @query {number} limit - Items per page (optional, default: 10, max: 100)
  * @query {string} tag - Filter by tag name (optional)
  * @query {string} author - Filter by author name (optional)
+ * @query {number} user_id - Filter by user ID (optional)
  * @returns {Object} Articles list with pagination info
  */
 export const getArticles = async (req, res) => {
   try {
-    const { page = 1, limit = 10, tag, author } = req.query;
+    const { page = 1, limit = 10, tag, author, user_id } = req.query;
     
     // Validate pagination parameters
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -357,6 +358,13 @@ export const getArticles = async (req, res) => {
     if (author && author.trim()) {
       whereConditions.push(`LOWER(u.full_name) LIKE LOWER($${paramIndex})`);
       queryParams.push(`%${author.trim()}%`);
+      paramIndex++;
+    }
+    
+    // Filter by user_id
+    if (user_id && !isNaN(user_id)) {
+      whereConditions.push(`ka.user_id = $${paramIndex}`);
+      queryParams.push(parseInt(user_id));
       paramIndex++;
     }
     
