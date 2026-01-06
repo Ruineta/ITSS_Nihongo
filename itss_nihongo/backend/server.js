@@ -38,9 +38,9 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || 
-        (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost'))) {
+
+    if (allowedOrigins.indexOf(origin) !== -1 ||
+      (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost'))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -53,7 +53,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 // Serve static files for uploads
-app.use('/uploads', express.static('uploads'));
+// Using '../uploads' because metadata logic stores it in project root/uploads, while this script runs in backend/
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

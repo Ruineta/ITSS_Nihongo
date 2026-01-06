@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
 import { generateSlideThumbnail } from '../services/thumbnailService.js';
+import { countPptxSlides, countPdfPages } from '../services/pageCountService.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -17,53 +18,109 @@ import fs from 'fs';
  */
 export const uploadSlide = async (req, res) => {
   try {
-    const {
+    console.log('Upload request received:', { body: req.body, file: req.file ? req.file.originalname : 'missing' });
+
+    let {
       title,
       description,
       subject_id,
+      subject_name,
       difficulty_level,
       difficulty_score = 0,
-      tags = []
+      tags
     } = req.body;
 
+    // Handle tags from FormData (tags[] or JSON string)
+    if (!tags && req.body['tags[]']) {
+      tags = req.body['tags[]'];
+    }
+    if (typeof tags === 'string') {
+      try {
+        tags = JSON.parse(tags);
+      } catch (e) {
+        tags = [tags];
+      }
+    }
+    if (!Array.isArray(tags)) tags = [];
+
     // Get user_id from authentication (placeholder for now)
-    const user_id = req.user?.id || 1; // TODO: Get from auth middleware
+    const user_id = req.user?.userId || 1;
+    console.log('Resolved user_id:', user_id);
 
     // Validate required fields
     if (!title || !req.file) {
+      console.error('Validation failed: Title or file missing');
       return res.status(400).json({
         success: false,
         message: 'Title and file are required'
       });
     }
 
+    // Resolve Subject ID (Find or Create)
+    let finalSubjectId = subject_id; // potentially undefined
+
+    if (subject_name) {
+      console.log('Resolving subject:', subject_name);
+      // Check if subject exists
+      const subjectCheckQuery = 'SELECT id FROM subjects WHERE name = $1';
+      const subjectCheckResult = await query(subjectCheckQuery, [subject_name.trim()]);
+
+      if (subjectCheckResult.rows.length > 0) {
+        finalSubjectId = subjectCheckResult.rows[0].id;
+      } else {
+        // Create new subject
+        const createSubjectQuery = 'INSERT INTO subjects (name) VALUES ($1) RETURNING id';
+        const createSubjectResult = await query(createSubjectQuery, [subject_name.trim()]);
+        finalSubjectId = createSubjectResult.rows[0].id;
+        console.log('Created new subject:', finalSubjectId);
+      }
+    }
+
+    console.log('Final Subject ID:', finalSubjectId);
+
     // Determine file type
-    const fileType = req.file.mimetype === 'application/pdf' ? 'pdf' 
-                   : req.file.originalname.endsWith('.pptx') ? 'pptx' 
-                   : 'ppt';
+    const originalName = req.file.originalname.toLowerCase();
+    let fileType = 'ppt';
+
+    if (originalName.endsWith('.pptx')) {
+      fileType = 'pptx';
+    } else if (originalName.endsWith('.ppt')) {
+      fileType = 'ppt';
+    } else if (req.file.mimetype === 'application/pdf' || originalName.endsWith('.pdf')) {
+      fileType = 'pdf';
+    }
 
     // File URL (adjust based on your storage strategy)
     const fileUrl = `/uploads/slides/${req.file.filename}`;
+
+    // Calculate Page Count
+    let pageCount = 0;
+    if (fileType === 'pptx') {
+      pageCount = countPptxSlides(req.file.path);
+    } else if (fileType === 'pdf') {
+      pageCount = await countPdfPages(req.file.path);
+    }
 
     // Insert slide record first to get the ID
     const insertQuery = `
       INSERT INTO slides (
         user_id, subject_id, title, description, 
-        file_url, file_type, difficulty_level, difficulty_score
+        file_url, file_type, difficulty_level, difficulty_score, page_count
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `;
 
     const insertResult = await query(insertQuery, [
       user_id,
-      subject_id || null,
+      finalSubjectId || null,
       title,
       description || null,
       fileUrl,
       fileType,
       difficulty_level || null,
-      difficulty_score
+      difficulty_score,
+      pageCount
     ]);
 
     const slideId = insertResult.rows[0].id;
@@ -76,7 +133,7 @@ export const uploadSlide = async (req, res) => {
         fileType,
         slideId
       );
-      
+
       thumbnailUrl = thumbnailResult.url;
 
       // Update slide with thumbnail URL
@@ -86,7 +143,12 @@ export const uploadSlide = async (req, res) => {
       );
     } catch (thumbnailError) {
       console.error('Thumbnail generation failed:', thumbnailError);
-      // Continue without thumbnail - will use placeholder
+      // Fallback to default thumbnail
+      thumbnailUrl = '/uploads/default-slide-thumbnail.png';
+      await query(
+        'UPDATE slides SET thumbnail_url = $1 WHERE id = $2',
+        [thumbnailUrl, slideId]
+      );
     }
 
     // Handle tags if provided
@@ -97,7 +159,7 @@ export const uploadSlide = async (req, res) => {
           'INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = $1 RETURNING id',
           [tagName.trim()]
         );
-        
+
         const tagId = tagResult.rows[0].id;
 
         // Link tag to slide
@@ -156,6 +218,7 @@ export const uploadSlide = async (req, res) => {
         fileType: slide.file_type,
         difficulty: slide.difficulty_level,
         difficultyScore: slide.difficulty_score,
+        pageCount: slide.page_count,
         tags: slide.tags,
         createdAt: slide.created_at
       }
@@ -163,7 +226,7 @@ export const uploadSlide = async (req, res) => {
 
   } catch (error) {
     console.error('Error uploading slide:', error);
-    
+
     // Clean up uploaded file on error
     if (req.file && req.file.path) {
       try {
@@ -184,15 +247,9 @@ export const uploadSlide = async (req, res) => {
 /**
  * Generate placeholder thumbnail URL
  */
+// Return local default thumbnail instead of external service to avoid network/parsing issues
 function generatePlaceholder(fileType) {
-  const colors = {
-    pdf: '4A90E2',
-    pptx: '50C878',
-    ppt: 'FF6B6B'
-  };
-  
-  const color = colors[fileType] || '9B59B6';
-  return `https://via.placeholder.com/400x300/${color}/ffffff?text=${fileType.toUpperCase()}+Slide`;
+  return '/uploads/default-slide-thumbnail.png';
 }
 
 /**

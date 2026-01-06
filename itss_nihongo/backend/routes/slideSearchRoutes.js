@@ -3,12 +3,14 @@ import {
   searchSlides,
   getSlideById,
   getSubjects,
-  getPopularTags
+  getPopularTags,
+  rateSlide
 } from '../controllers/slideSearchController.js';
 import {
   validateSearchParams,
   validateSlideId
 } from '../middleware/searchValidator.js';
+import { optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -57,5 +59,12 @@ router.get('/filters/tags', getPopularTags);
  * @example GET /api/slides/123
  */
 router.get('/:id', validateSlideId, getSlideById);
+
+/**
+ * @route   POST /api/slides/:id/rate
+ * @desc    Rate slide difficulty
+ * @access  Public (Optional Auth)
+ */
+router.post('/:id/rate', optionalAuth, validateSlideId, rateSlide);
 
 export default router;

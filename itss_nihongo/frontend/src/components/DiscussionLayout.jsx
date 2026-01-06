@@ -7,8 +7,11 @@ const DiscussionLayout = ({
   slides = [],
   comments = [],
   activities = [],
+  pageIndex = 0,
   onCommentSubmit,
   onSelectTopic,
+  onPageChange,
+  onExit,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRating, setSelectedRating] = useState(null);
@@ -47,7 +50,10 @@ const DiscussionLayout = ({
     setSelectedRating(filters.rating || null);
   };
 
-  const handleSelectSlide = (slide) => {
+  const handleSelectSlide = (slide, index) => {
+    if (onPageChange) {
+      onPageChange(index);
+    }
     if (onSelectTopic) {
       onSelectTopic(slide);
     }
@@ -55,83 +61,61 @@ const DiscussionLayout = ({
 
   return (
     <div className="space-y-6">
-      {/* Search Bar - Full Width */}
-      <DiscussionSearchBar
-        onSearch={handleSearch}
-        onFilterChange={handleFilterChange}
-      />
+      {/* Exit Button Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">ディスカッション</h2>
+        {onExit && (
+          <button
+            onClick={onExit}
+            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition flex items-center gap-2"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            閉じる
+          </button>
+        )}
+      </div>
 
-      {/* 3-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Sidebar - Discussion List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-24">
-            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span>💬</span>討論一覧
-            </h3>
-            <p className="text-xs text-gray-500 mb-3">
-              {filteredComments.length} 件のコメント
-            </p>
+      {/* 3-Column Layout - REFACTORED to Single Column */}
+      <div className="grid grid-cols-1 gap-6">
 
-            {/* Comments Summary */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredComments.length > 0 ? (
-                filteredComments.slice(0, 5).map((comment, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2 bg-gray-50 rounded-lg border border-gray-100 hover:border-blue-300 transition cursor-pointer"
-                  >
-                    <p className="text-xs font-semibold text-gray-900 truncate">
-                      {comment.author}
-                    </p>
-                    <p className="text-xs text-gray-600 line-clamp-2">
-                      {comment.content}
-                    </p>
-                    {comment.rating && (
-                      <p className="text-xs text-yellow-600 mt-1">
-                        {Array(comment.rating).fill("⭐").join("")}
-                      </p>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-gray-400 text-center py-4">
-                  コメントがありません
-                </p>
-              )}
-            </div>
-
-            {filteredComments.length > 5 && (
-              <button className="w-full mt-3 py-2 text-xs text-blue-600 hover:text-blue-700 font-medium rounded-lg hover:bg-blue-50 transition">
-                すべてを表示 ({filteredComments.length})
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Middle Section - Topic Carousel */}
-        <div className="lg:col-span-2">
+        {/* Middle Section - Topic Carousel (Now Full Width) */}
+        <div className="w-full">
           <TopicSlideCarousel
             slides={slides}
-            onSelectSlide={handleSelectSlide}
+            onSelectSlide={(slide, index) => handleSelectSlide(slide, index)}
           />
         </div>
 
-        {/* Right Sidebar - Recent Activity */}
-        <div className="lg:col-span-1">
-          <RecentActivityPanel activities={activities} />
-        </div>
       </div>
 
       {/* Comments Display Section - Full Width */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <span>💭</span>
-          討論内容
-          <span className="text-sm font-normal text-gray-500">
-            ({filteredComments.length}件)
-          </span>
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <span>💭</span>
+            討論内容
+            <span className="text-sm font-normal text-gray-500">
+              ({filteredComments.length}件)
+            </span>
+          </h3>
+          {pageIndex >= 0 && (
+            <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+              ページ {pageIndex + 1}
+            </span>
+          )}
+        </div>
 
         {/* Comments List */}
         <div className="space-y-4">

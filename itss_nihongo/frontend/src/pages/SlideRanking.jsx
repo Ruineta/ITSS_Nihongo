@@ -11,39 +11,7 @@ const SlideRanking = () => {
     const [activeTab, setActiveTab] = useState('難解ランキング');
     const [loading, setLoading] = useState(true);
 
-    // Use real data by default; toggle to mock only when backend is unavailable
-    const [useMockData, setUseMockData] = useState(false);
-    
-    // Move mockSlides outside component to prevent recreation on each render
-    const mockSlides = React.useMemo(() => [
-        {
-            id: 999,
-            title: '量子力学の基礎：波動関数',
-            subject: '物理',
-            description: '量子力学における波動関数の基本概念と応用について解説したスライドです',
-            author: {
-                name: '鈴木先生',
-                school: '東京大学',
-                specialization: '理論物理学'
-            },
-            difficultyScore: 95,
-            difficultyLevel: 'very_hard',
-            fileUrl: '/slides/quantum-mechanics.pdf',
-            fileType: 'pdf',
-            createdAt: '2024-12-01T10:00:00Z',
-            isRated: true,
-            userRating: 0,
-            userFeedback: '',
-            analysisPoints: [
-                '専門用語が難しい',
-                '抽象的な概念の理解が困難',
-                '数式の展開が複雑',
-                '前提知識が多く必要'
-            ]
-        }
-    ], []);
-
-    const [slides, setSlides] = useState(useMockData ? mockSlides : []);
+    const [slides, setSlides] = useState([]);
     const [error, setError] = useState(null);
     const [pagination, setPagination] = useState({
         total: 0,
@@ -154,21 +122,10 @@ const SlideRanking = () => {
     }, []);
 
     React.useEffect(() => {
-        if (useMockData) {
-            setLoading(false);
-            setSlides(mockSlides);
-            setPagination({
-                total: mockSlides.length,
-                limit: 10,
-                offset: 0,
-                hasMore: false
-            });
-            return;
-        }
         void fetchSlides();
         void fetchStats();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [useMockData]);
+    }, []);
 
     // Fetch subjects for subject filter
     React.useEffect(() => {
@@ -295,28 +252,6 @@ const SlideRanking = () => {
             <Navigation currentTab={activeTab} onTabChange={setActiveTab} />
 
             <main className="max-w-7xl mx-auto px-4 py-8">
-                    {/* Mock Data Toggle - Remove in production */}
-                    {useMockData && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-yellow-800">🧪 テストモード</p>
-                                    <p className="text-xs text-yellow-700">モックデータを使用しています（本番環境では削除してください）</p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setUseMockData(false);
-                                        setSlides([]);
-                                        void fetchSlides();
-                                        void fetchStats();
-                                    }}
-                                    className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 text-sm"
-                                >
-                                    実データに切り替え
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 {/* Header Section */}
                 <div className="bg-orange-50 rounded-lg p-6 mb-4 border-l-4 border-orange-500">
                     <div className="flex items-center gap-3 mb-2">

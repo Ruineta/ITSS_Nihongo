@@ -1,4 +1,10 @@
 import { query } from '../config/database.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Controller for Slide Search Feature
@@ -148,6 +154,7 @@ export const searchSlides = async (req, res) => {
         s.difficulty_level,
         s.difficulty_score,
         s.view_count,
+        s.avg_rating,
         s.created_at,
         s.updated_at,
         u.full_name as author,
@@ -159,7 +166,8 @@ export const searchSlides = async (req, res) => {
           ) FILTER (WHERE t.id IS NOT NULL),
           '[]'
         ) as tags,
-        COUNT(DISTINCT sl.user_id) as like_count
+        COUNT(DISTINCT sl.user_id) as like_count,
+        (SELECT COUNT(*) FROM slide_comments WHERE slide_id = s.id) as comment_count
       FROM slides s
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN subjects sub ON s.subject_id = sub.id
@@ -187,11 +195,14 @@ export const searchSlides = async (req, res) => {
       subject: row.subject_name,
       tags: row.tags,
       views: row.view_count,
-      likes: row.like_count,
+      likes: parseInt(row.like_count, 10),
+      commentCount: parseInt(row.comment_count, 10),
       difficulty: row.difficulty_level,
       difficultyScore: row.difficulty_score,
       fileUrl: row.file_url,
-      fileType: row.file_type,
+      fileType: row.file_type ? row.file_type.toUpperCase() : 'PDF',
+      fileSize: getFileSizeLocal(row.file_url),
+      avgRating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : "0.0",
       thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
     }));
 
@@ -239,6 +250,7 @@ export const getSlideById = async (req, res) => {
         s.difficulty_level,
         s.difficulty_score,
         s.view_count,
+        s.avg_rating,
         s.created_at,
         s.updated_at,
         u.id as author_id,
@@ -311,6 +323,7 @@ export const getSlideById = async (req, res) => {
         difficultyPoints: row.difficulty_points,
         fileUrl: row.file_url,
         fileType: row.file_type,
+        avgRating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : "0.0",
         thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
       }
     });
@@ -393,6 +406,71 @@ export const getPopularTags = async (req, res) => {
   }
 };
 
+/**
+ * Rate slide difficulty
+ * @route POST /api/slides/:id/rate
+ */
+export const rateSlide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { difficultyScore, feedback } = req.body;
+
+    // Use authenticateToken middleware if available, or fallback to default user (1) or null
+    // Since this might be called from search page without strict login force (depending on frontend),
+    // we should handle it gracefully.
+    const userId = req.user?.userId || req.user?.id || 1;
+
+    // Validate score (0-100)
+    if (difficultyScore === undefined || difficultyScore < 0 || difficultyScore > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid difficulty score (0-100)'
+      });
+    }
+
+    // Insert or Update rating in slide_ratings
+    // Note: rating_points is set to 0 as this is difficulty rating, not star rating.
+    const ratingQuery = `
+      INSERT INTO slide_ratings (slide_id, user_id, rating_points, difficulty_score, feedback, updated_at)
+      VALUES ($1, $2, 0, $3, $4, CURRENT_TIMESTAMP)
+      ON CONFLICT (slide_id, user_id)
+      DO UPDATE SET 
+        difficulty_score = EXCLUDED.difficulty_score,
+        feedback = EXCLUDED.feedback,
+        updated_at = CURRENT_TIMESTAMP
+    `;
+
+    await query(ratingQuery, [id, userId, difficultyScore, feedback || '']);
+
+    // Recalculate average difficulty for the slide
+    const avgQuery = `
+      SELECT AVG(difficulty_score) as avg_score
+      FROM slide_ratings
+      WHERE slide_id = $1
+    `;
+    const avgResult = await query(avgQuery, [id]);
+    const newAvg = Math.round(avgResult.rows[0].avg_score || 0);
+
+    // Update slide difficulty score in slides table
+    await query('UPDATE slides SET difficulty_score = $1 WHERE id = $2', [newAvg, id]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        difficultyScore: newAvg
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in rateSlide:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to submit rating'
+    });
+  }
+};
+
+
 // Helper functions
 
 /**
@@ -419,18 +497,57 @@ function generateThumbnailUrl(fileUrl, fileType) {
   // This is a placeholder implementation
   // In production, you would implement actual thumbnail generation
   // based on your file storage service (S3, CloudFront, etc.)
-  
+
   if (fileUrl && fileUrl.includes('thumbnail')) {
     return fileUrl;
   }
-  
+
   // Return placeholder based on file type
   const colors = {
     pdf: '4A90E2',
     pptx: '50C878',
     ppt: 'FF6B6B'
   };
-  
+
   const color = colors[fileType] || '9B59B6';
-  return `https://via.placeholder.com/400x300/${color}/ffffff?text=${fileType.toUpperCase()}+Slide`;
+  // Return local default thumbnail instead of external service to avoid network issues
+  return '/default-slide-thumbnail.png';
+}
+
+/**
+ * Get file size from local file system
+ * @param {string} fileUrl - Relative URL path (e.g. /uploads/slides/...)
+ * @returns {string} Formatted size (e.g. "2.5 MB") or "Unknown"
+ */
+function getFileSizeLocal(fileUrl) {
+  if (!fileUrl) return 'Unknown';
+  try {
+    // fileUrl is like /uploads/slides/filename.pdf
+    // We need to resolve it to absolute path.
+    // Assuming backend root is where this runs, and uploads is ../uploads relative to this controller?
+    // Wait, controller is in backend/controllers.
+    // Uploads are in project_root/uploads.
+    // So path should be path.join(__dirname, '../../', fileUrl) if fileUrl starts with /uploads
+
+    // Better strategy: Check where uploads folder is relative to controller.
+    // Controller: d:\ITSS_Nihongo\itss_nihongo\backend\controllers
+    // Uploads: d:\ITSS_Nihongo\itss_nihongo\uploads
+    // So ../../uploads is correct.
+
+    // Safety check for absolute path
+    const relativePath = fileUrl.startsWith('/') ? fileUrl.substring(1) : fileUrl;
+    const absolutePath = path.join(__dirname, '../../', relativePath);
+
+    if (fs.existsSync(absolutePath)) {
+      const stats = fs.statSync(absolutePath);
+      const bytes = stats.size;
+      if (bytes < 1024) return bytes + ' B';
+      else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      else return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    return 'Unknown';
+  } catch (e) {
+    console.error('Error calculating file size:', e);
+    return 'Unknown';
+  }
 }
