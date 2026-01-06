@@ -45,3 +45,26 @@ export const fetchUserStats = async () => {
     throw error;
   }
 };
+
+export const fetchUserActivities = async (limit = 20) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/auth/activities?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user activities');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching user activities:', error);
+    throw error;
+  }
+};

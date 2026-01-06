@@ -294,3 +294,92 @@ export const getUserStats = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get user activities (uploads, comments)
+ * @route GET /api/auth/activities
+ */
+export const getUserActivities = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { limit = 20 } = req.query;
+
+    // Query to get all activities (uploads, slide comments, know-how comments, know-how posts)
+    const activitiesQuery = `
+      -- Slide uploads
+      SELECT 
+        'upload' as type,
+        s.id as item_id,
+        s.title,
+        s.created_at as timestamp,
+        NULL as content
+      FROM slides s
+      WHERE s.user_id = $1
+
+      UNION ALL
+
+      -- Slide comments
+      SELECT 
+        'slide_comment' as type,
+        sc.slide_id as item_id,
+        s.title,
+        sc.created_at as timestamp,
+        sc.content
+      FROM slide_comments sc
+      JOIN slides s ON sc.slide_id = s.id
+      WHERE sc.user_id = $1
+
+      UNION ALL
+
+      -- Know-how comments
+      SELECT 
+        'knowhow_comment' as type,
+        kc.article_id as item_id,
+        ka.title,
+        kc.created_at as timestamp,
+        kc.content
+      FROM know_how_comments kc
+      JOIN know_how_articles ka ON kc.article_id = ka.id
+      WHERE kc.user_id = $1
+
+      UNION ALL
+
+      -- Know-how article posts
+      SELECT 
+        'knowhow_post' as type,
+        ka.id as item_id,
+        ka.title,
+        ka.created_at as timestamp,
+        ka.content
+      FROM know_how_articles ka
+      WHERE ka.user_id = $1
+
+      ORDER BY timestamp DESC
+      LIMIT $2
+    `;
+
+    const result = await query(activitiesQuery, [userId, limit]);
+
+    // Format activities
+    const activities = result.rows.map(row => ({
+      type: row.type,
+      itemId: row.item_id,
+      title: row.title,
+      content: row.content,
+      timestamp: row.timestamp
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: activities
+    });
+
+  } catch (error) {
+    console.error('Get user activities error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'サーバーエラーが発生しました',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};

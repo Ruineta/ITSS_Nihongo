@@ -14,10 +14,10 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
  * @param {number} params.limit - Items per page (optional, default: 12)
  * @returns {Promise<Object>} - Kết quả tìm kiếm
  */
-export const searchSlides = async ({ 
-    keyword = '', 
-    subject = '全て', 
-    difficulty = '明易い順', 
+export const searchSlides = async ({
+    keyword = '',
+    subject = '全て',
+    difficulty = '明易い順',
     year = '全て',
     page = 1,
     limit = 12
@@ -25,23 +25,23 @@ export const searchSlides = async ({
     try {
         // Build query parameters
         const params = new URLSearchParams();
-        
+
         if (keyword && keyword.trim()) {
             params.append('keyword', keyword.trim());
         }
-        
+
         if (subject && subject !== '全て') {
             params.append('subject', subject);
         }
-        
+
         if (difficulty && difficulty !== '明易い順') {
             params.append('difficulty', difficulty);
         }
-        
+
         if (year && year !== '全て') {
             params.append('year', year);
         }
-        
+
         // Determine sort order
         let sortBy = 'newest';
         if (difficulty === '明易い順') {
@@ -64,7 +64,7 @@ export const searchSlides = async ({
         }
 
         const result = await response.json();
-        
+
         if (!result.success) {
             throw new Error(result.message || 'データの取得に失敗しました');
         }
@@ -72,7 +72,7 @@ export const searchSlides = async ({
         // Transform tags from array of objects to array of strings
         const transformedData = result.data.map(slide => ({
             ...slide,
-            tags: Array.isArray(slide.tags) 
+            tags: Array.isArray(slide.tags)
                 ? slide.tags.map(tag => typeof tag === 'object' ? tag.name : tag)
                 : []
         }));
@@ -111,7 +111,7 @@ export const getSlideById = async (id) => {
         }
 
         const result = await response.json();
-        
+
         if (!result.success) {
             throw new Error(result.message || 'データの取得に失敗しました');
         }
@@ -119,7 +119,7 @@ export const getSlideById = async (id) => {
         // Transform tags from array of objects to array of strings
         const transformedData = {
             ...result.data,
-            tags: Array.isArray(result.data.tags) 
+            tags: Array.isArray(result.data.tags)
                 ? result.data.tags.map(tag => typeof tag === 'object' ? tag.name : tag)
                 : []
         };
@@ -192,7 +192,7 @@ export const getSubjects = async () => {
         }
 
         const result = await response.json();
-        
+
         if (!result.success) {
             throw new Error(result.message || '科目の取得に失敗しました');
         }
@@ -215,7 +215,7 @@ export const getSubjects = async () => {
 export const getPopularTags = async (limit = 20) => {
     try {
         const params = new URLSearchParams({ limit: limit.toString() });
-        
+
         const response = await fetch(`${API_BASE_URL}/slides/filters/tags?${params}`, {
             method: 'GET',
             headers: {
@@ -228,7 +228,7 @@ export const getPopularTags = async (limit = 20) => {
         }
 
         const result = await response.json();
-        
+
         if (!result.success) {
             throw new Error(result.message || 'タグの取得に失敗しました');
         }
@@ -243,12 +243,121 @@ export const getPopularTags = async (limit = 20) => {
     }
 };
 
+/**
+ * Like a slide
+ * @param {number} id - Slide ID
+ * @returns {Promise<Object>}
+ */
+export const likeSlide = async (id) => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('いいねの送信に失敗しました');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'いいねの送信に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        console.error('Error liking slide:', error);
+        throw error;
+    }
+};
+
+/**
+ * Unlike a slide
+ * @param {number} id - Slide ID
+ * @returns {Promise<Object>}
+ */
+export const unlikeSlide = async (id) => {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/like`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('いいねの取り消しに失敗しました');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'いいねの取り消しに失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        console.error('Error unliking slide:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get like status for a slide
+ * @param {number} id - Slide ID
+ * @returns {Promise<Object>} - { isLiked: boolean, likeCount: number }
+ */
+export const getLikeStatus = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/like-status`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('いいねステータスの取得に失敗しました');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || 'いいねステータスの取得に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        console.error('Error getting like status for slide:', error);
+        throw error;
+    }
+};
+
 const slideService = {
     searchSlides,
     getSlideById,
     rateSlide,
     getSubjects,
-    getPopularTags
+    getPopularTags,
+    likeSlide,
+    unlikeSlide,
+    getLikeStatus
 };
 
 export default slideService;

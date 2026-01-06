@@ -1,5 +1,10 @@
 import express from 'express';
-import { register, login, getCurrentUser, getUserStats } from '../controllers/authController.js';
+import {
+    register, login,
+    getCurrentUser,
+    getUserStats,
+    getUserActivities
+} from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -38,5 +43,12 @@ router.get('/me', authenticateToken, getCurrentUser);
  * @access  Private (requires authentication)
  */
 router.get('/stats', authenticateToken, getUserStats);
+
+/**
+ * @route   GET /api/auth/activities
+ * @desc    Get current user activities (uploads, comments)
+ * @access  Private (requires authentication)
+ */
+router.get('/activities', authenticateToken, getUserActivities);
 
 export default router;

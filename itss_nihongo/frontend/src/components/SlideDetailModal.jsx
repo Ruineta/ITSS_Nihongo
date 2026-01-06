@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { likeSlide, unlikeSlide, getLikeStatus } from '../services/slideService';
 
 const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
   const navigate = useNavigate();
@@ -11,6 +12,11 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
   const [slideComments, setSlideComments] = useState([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState(null);
+
+  // Like state
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
 
   // Fetch comments from API
   const fetchSlideComments = async (slideId) => {
@@ -73,8 +79,52 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
 
       // Fetch comments for this slide
       fetchSlideComments(slide.id);
+
+      // Fetch like status
+      fetchLikeStatus(slide.id);
+
+      // Initialize like count from slide data
+      setLikeCount(slide.likes || 0);
     }
   }, [isOpen, slide]);
+
+  // Fetch like status
+  const fetchLikeStatus = async (slideId) => {
+    try {
+      const data = await getLikeStatus(slideId);
+      setIsLiked(data.data.isLiked);
+      setLikeCount(data.data.likeCount);
+    } catch (error) {
+      console.error('Error fetching like status:', error);
+    }
+  };
+
+  // Handle like toggle
+  const handleLikeToggle = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('ログインしてください');
+      return;
+    }
+
+    setIsLiking(true);
+    try {
+      if (isLiked) {
+        const data = await unlikeSlide(slide.id);
+        setIsLiked(false);
+        setLikeCount(data.data.likeCount);
+      } else {
+        const data = await likeSlide(slide.id);
+        setIsLiked(true);
+        setLikeCount(data.data.likeCount);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      alert('いいねの処理に失敗しました');
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   if (!isOpen || !slide) return null;
 
@@ -213,6 +263,29 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                   </svg>
                   ダウンロード
                 </a>
+                <button
+                  onClick={handleLikeToggle}
+                  disabled={isLiking}
+                  className={`flex-1 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm ${isLiked
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill={isLiked ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  {isLiked ? 'いいね済み' : 'いいね'} ({likeCount})
+                </button>
                 <button
                   onClick={() => {
                     if (slide?.id) {

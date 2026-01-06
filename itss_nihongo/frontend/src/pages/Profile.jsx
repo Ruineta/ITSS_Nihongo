@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 import Navigation from '../components/Navigation.jsx';
 import ProfileModal from '../components/ProfileModal.jsx';
-import { fetchUserProfile, fetchUserStats } from '../services/profileService';
+import { fetchUserProfile, fetchUserStats, fetchUserActivities } from '../services/profileService';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfessorProfile() {
@@ -23,7 +23,8 @@ export default function ProfessorProfile() {
     yearsOfExperience: 0
   });
 
-  const [activities] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
 
   const [stats, setStats] = useState([
     { icon: '📄', number: 0, label: 'アップロードしたスライド' },
@@ -51,8 +52,15 @@ export default function ProfessorProfile() {
           { icon: '💬', number: statsData.commentsPosted, label: '投稿したコメント' },
           { icon: '🏅', number: statsData.likesReceived, label: '獲得したいいね' }
         ]);
+
+        // Fetch activities
+        setLoadingActivities(true);
+        const activitiesData = await fetchUserActivities(20);
+        setActivities(activitiesData);
+        setLoadingActivities(false);
       } catch (error) {
         console.error('Error loading user data:', error);
+        setLoadingActivities(false);
         // Có thể thêm thông báo lỗi cho user ở đây
       }
     };
@@ -114,6 +122,75 @@ export default function ProfessorProfile() {
     alert('ログアウトしました');
     logout();
     navigate('/auth');
+  };
+
+  // Helper functions for activities
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'upload': return '📄';
+      case 'slide_comment': return '💬';
+      case 'knowhow_comment': return '📝';
+      case 'knowhow_post': return '📊';
+      default: return '📋';
+    }
+  };
+
+  const getActivityText = (activity) => {
+    switch (activity.type) {
+      case 'upload':
+        return (
+          <>
+            スライド <span className="text-blue-600 font-medium">{activity.title}</span> をアップロードしました
+          </>
+        );
+      case 'slide_comment':
+        return (
+          <>
+            <span className="text-blue-600 font-medium">{activity.title}</span> にコメントしました
+          </>
+        );
+      case 'knowhow_comment':
+        return (
+          <>
+            ノウハウ記事 <span className="text-blue-600 font-medium">{activity.title}</span> にコメントしました
+          </>
+        );
+      case 'knowhow_post':
+        return (
+          <>
+            ノウハウ記事 <span className="text-blue-600 font-medium">{activity.title}</span> を投稿しました
+          </>
+        );
+      default:
+        return activity.title;
+    }
+  };
+
+  const handleActivityClick = (activity) => {
+    switch (activity.type) {
+      case 'upload':
+      case 'slide_comment':
+        navigate(`/discussion/${activity.itemId}`);
+        break;
+      case 'knowhow_comment':
+      case 'knowhow_post':
+        navigate('/exp-share');
+        break;
+    }
+  };
+
+  const formatActivityTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}日前`;
+    if (hours > 0) return `${hours}時間前`;
+    if (minutes > 0) return `${minutes}分前`;
+    return 'たった今';
   };
 
   return (
@@ -228,35 +305,38 @@ export default function ProfessorProfile() {
             {activeTab === 'activity' ? (
               // Activity View
               <div className="flex flex-col gap-5">
-                {activities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex gap-5 p-5 rounded-lg bg-gray-50 hover:bg-gray-100 hover:translate-x-1 transition-all duration-200"
-                  >
-                    <div className="w-10 h-10 flex items-center justify-center text-2xl flex-shrink-0">
-                      {activity.icon}
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-900 mb-2 leading-relaxed">
-                        {activity.type === 'upload' && 'スライド '}
-                        <a href="#" className="text-blue-600 hover:underline font-medium">
-                          {activity.title}
-                        </a>
-                        {activity.action}
-                      </div>
-                      <div className="text-xs text-gray-600 mt-1 leading-snug">
-                        {activity.isCategory ? (
-                          <span className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">
-                            {activity.detail}
-                          </span>
-                        ) : (
-                          activity.detail
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">{activity.time}</div>
-                    </div>
+                {loadingActivities ? (
+                  <div className="text-center py-8 text-gray-500">読み込み中...</div>
+                ) : activities.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    最近の活動はありません
                   </div>
-                ))}
+                ) : (
+                  activities.map((activity, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleActivityClick(activity)}
+                      className="flex gap-5 p-5 rounded-lg bg-gray-50 hover:bg-gray-100 hover:translate-x-1 transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="w-10 h-10 flex items-center justify-center text-2xl flex-shrink-0">
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-900 mb-2 leading-relaxed">
+                          {getActivityText(activity)}
+                        </div>
+                        {activity.content && (
+                          <div className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {activity.content}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400 mt-1">
+                          {formatActivityTime(activity.timestamp)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             ) : (
               // Settings View - Change Password

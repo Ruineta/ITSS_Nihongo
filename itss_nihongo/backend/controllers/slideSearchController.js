@@ -470,6 +470,123 @@ export const rateSlide = async (req, res) => {
   }
 };
 
+/**
+ * Like a slide
+ * @route POST /api/slides/:id/like
+ */
+export const likeSlide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // Insert like (ignore if already exists)
+    await query(
+      'INSERT INTO slide_likes (user_id, slide_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [userId, id]
+    );
+
+    // Get updated like count
+    const countResult = await query(
+      'SELECT COUNT(*) as count FROM slide_likes WHERE slide_id = $1',
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        likeCount: parseInt(countResult.rows[0].count, 10)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in likeSlide:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to like slide'
+    });
+  }
+};
+
+/**
+ * Unlike a slide
+ * @route DELETE /api/slides/:id/like
+ */
+export const unlikeSlide = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // Delete like
+    await query(
+      'DELETE FROM slide_likes WHERE user_id = $1 AND slide_id = $2',
+      [userId, id]
+    );
+
+    // Get updated like count
+    const countResult = await query(
+      'SELECT COUNT(*) as count FROM slide_likes WHERE slide_id = $1',
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        likeCount: parseInt(countResult.rows[0].count, 10)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in unlikeSlide:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to unlike slide'
+    });
+  }
+};
+
+/**
+ * Get like status for a slide
+ * @route GET /api/slides/:id/like
+ */
+export const getLikeStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.userId; // Optional auth
+
+    let isLiked = false;
+
+    // Check if user has liked (only if authenticated)
+    if (userId) {
+      const likeResult = await query(
+        'SELECT 1 FROM slide_likes WHERE user_id = $1 AND slide_id = $2',
+        [userId, id]
+      );
+      isLiked = likeResult.rows.length > 0;
+    }
+
+    // Get total like count
+    const countResult = await query(
+      'SELECT COUNT(*) as count FROM slide_likes WHERE slide_id = $1',
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        isLiked,
+        likeCount: parseInt(countResult.rows[0].count, 10)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getLikeStatus:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get like status'
+    });
+  }
+};
+
 
 // Helper functions
 
@@ -521,6 +638,12 @@ function generateThumbnailUrl(fileUrl, fileType) {
  */
 function getFileSizeLocal(fileUrl) {
   if (!fileUrl) return 'Unknown';
+
+  // If it's an external URL (http/https), return a placeholder
+  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+    return '2.5 MB'; // Placeholder for sample data
+  }
+
   try {
     // fileUrl is like /uploads/slides/filename.pdf
     // We need to resolve it to absolute path.

@@ -4,13 +4,16 @@ import {
   getSlideById,
   getSubjects,
   getPopularTags,
-  rateSlide
+  rateSlide,
+  likeSlide,
+  unlikeSlide,
+  getLikeStatus
 } from '../controllers/slideSearchController.js';
 import {
   validateSearchParams,
   validateSlideId
 } from '../middleware/searchValidator.js';
-import { optionalAuth } from '../middleware/authMiddleware.js';
+import { optionalAuth, authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -66,5 +69,26 @@ router.get('/:id', validateSlideId, getSlideById);
  * @access  Public (Optional Auth)
  */
 router.post('/:id/rate', optionalAuth, validateSlideId, rateSlide);
+
+/**
+ * @route   POST /api/slides/:id/like
+ * @desc    Like a slide
+ * @access  Private
+ */
+router.post('/:id/like', authenticateToken, validateSlideId, likeSlide);
+
+/**
+ * @route   DELETE /api/slides/:id/like
+ * @desc    Unlike a slide
+ * @access  Private
+ */
+router.delete('/:id/like', authenticateToken, validateSlideId, unlikeSlide);
+
+/**
+ * @route   GET /api/slides/:id/like
+ * @desc    Get like status for a slide
+ * @access  Public (Optional Auth)
+ */
+router.get('/:id/like', optionalAuth, validateSlideId, getLikeStatus);
 
 export default router;
