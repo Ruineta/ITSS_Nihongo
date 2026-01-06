@@ -2,7 +2,8 @@ import { query } from '../config/database.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Hardcoded default for easy setup - change in production for security
+const JWT_SECRET = process.env.JWT_SECRET || 'itss-nihongo-default-jwt-secret-2024-change-in-production-a8f5f167f44f4964e6c998dee827110c';
 const JWT_EXPIRES_IN = '7d';
 
 /**

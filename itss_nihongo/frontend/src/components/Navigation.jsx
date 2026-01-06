@@ -10,7 +10,7 @@ const Navigation = () => {
         { label: 'アップロード', path: '/upload' },
         { label: 'ディスカッション', path: '/discussion' },
         { label: 'ノウハウ共有', path: '/exp-share' },
-        { label: '難解ランキング', path: '/ranking' },
+        // { label: '難解ランキング', path: '/ranking' }, // Removed
         { label: 'プロフィール', path: '/profile' }
     ];
 
