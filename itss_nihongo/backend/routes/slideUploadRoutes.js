@@ -1,6 +1,7 @@
 import express from 'express';
 import { uploadSlide, deleteSlide } from '../controllers/slideUploadController.js';
 import { upload, handleUploadError } from '../middleware/uploadMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ const router = express.Router();
  * - difficulty_level: "中級"
  * - tags: ["数学", "基礎", "中級"]
  */
-router.post('/upload', upload.single('file'), handleUploadError, uploadSlide);
+router.post('/upload', authenticateToken, upload.single('file'), handleUploadError, uploadSlide);
 
 /**
  * @route   DELETE /api/slides/:id

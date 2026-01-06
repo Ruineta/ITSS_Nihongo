@@ -43,7 +43,8 @@ export const getSlideComments = async (slideId, options = {}) => {
     const {
       page = 1,
       limit = 20,
-      sortBy = 'newest'
+      sortBy = 'newest',
+      pageIndex
     } = options;
 
     const queryParams = new URLSearchParams({
@@ -51,6 +52,10 @@ export const getSlideComments = async (slideId, options = {}) => {
       limit,
       sortBy
     });
+
+    if (pageIndex !== undefined) {
+      queryParams.append('pageIndex', pageIndex);
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/discussions/slides/${slideId}/comments?${queryParams}`,
@@ -86,7 +91,7 @@ export const getSlideComments = async (slideId, options = {}) => {
  */
 export const createComment = async (slideId, commentData) => {
   try {
-    const { content, type = 'comment', userId, token } = commentData;
+    const { content, type = 'comment', userId, token, pageIndex, rating } = commentData;
 
     // Validation
     if (!content || !content.trim()) {
@@ -116,7 +121,9 @@ export const createComment = async (slideId, commentData) => {
         body: JSON.stringify({
           content: content.trim(),
           type,
-          userId
+          userId,
+          pageIndex,
+          rating
         })
       }
     );
@@ -177,6 +184,50 @@ export const deleteComment = async (commentId, userId, token) => {
 };
 
 
+
+/**
+ * Get all slides with discussion stats for the discussion listing page
+ * @param {Object} options - Query options
+ * @param {number} options.page - Page number (default: 1)
+ * @param {number} options.limit - Items per page (default: 10)
+ * @param {string} options.sortBy - 'newest', 'mostCommented', 'highestRated' (default: 'newest')
+ * @returns {Promise<Object>} Slides with ratings and comment counts
+ */
+export const getSlidesList = async (options = {}) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'newest'
+    } = options;
+
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+      sortBy
+    });
+
+    const response = await fetch(
+      `${API_BASE_URL}/discussions/slides?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching slides list:', error);
+    throw error;
+  }
+};
 
 /**
  * Get discussion topics for a slide
@@ -292,12 +343,186 @@ export const searchComments = async (slideId, options = {}) => {
   }
 };
 
+/**
+ * Rate a slide overall
+ * @param {number} slideId - Slide ID
+ * @param {Object} ratingData - Rating data
+ * @param {number} ratingData.userId - Current user ID
+ * @param {number} ratingData.ratingPoints - Star rating (0-5)
+ * @param {number} ratingData.difficultyScore - Difficulty score (0-100)
+ * @param {string} ratingData.feedback - Optional feedback
+ * @param {string} ratingData.token - Auth token
+ * @returns {Promise<Object>} Rating result
+ */
+export const rateSlide = async (slideId, ratingData) => {
+  try {
+    const { userId, ratingPoints, difficultyScore = 0, feedback = '', token } = ratingData;
+
+    // Validation
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    if (ratingPoints === undefined || ratingPoints === null) {
+      throw new Error('Rating points is required');
+    }
+
+    if (ratingPoints < 0 || ratingPoints > 5) {
+      throw new Error('Rating points must be between 0 and 5');
+    }
+
+    if (!token) {
+      throw new Error('Auth token is required');
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/discussions/slides/${slideId}/rate`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId,
+          ratingPoints,
+          difficultyScore,
+          feedback
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error rating slide:', error);
+    throw error;
+  }
+};
+
+/**
+ * Rate a specific page in a slide
+ * @param {number} slideId - Slide ID
+ * @param {number} pageIndex - Page index (0-based)
+ * @param {Object} ratingData - Rating data
+ * @param {number} ratingData.userId - Current user ID
+ * @param {number} ratingData.ratingPoints - Star rating (0-5)
+ * @param {string} ratingData.feedback - Optional feedback
+ * @param {string} ratingData.token - Auth token
+ * @returns {Promise<Object>} Rating result
+ */
+export const rateSlidePagee = async (slideId, pageIndex, ratingData) => {
+  try {
+    const { userId, ratingPoints, feedback = '', token } = ratingData;
+
+    // Validation
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    if (ratingPoints === undefined || ratingPoints === null) {
+      throw new Error('Rating points is required');
+    }
+
+    if (ratingPoints < 0 || ratingPoints > 5) {
+      throw new Error('Rating points must be between 0 and 5');
+    }
+
+    if (!token) {
+      throw new Error('Auth token is required');
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/discussions/slides/${slideId}/pages/${pageIndex}/rate`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId,
+          ratingPoints,
+          feedback
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error rating slide page:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get global activities (comments, replies across all slides)
+ * @param {Object} options - Query options
+ * @param {string} options.filter - 'all', 'comment', 'reply', 'mine'
+ * @param {number} options.page - Page number
+ * @param {number} options.limit - Items per page
+ * @param {string} options.token - Auth token for 'mine' filter
+ * @returns {Promise<Object>} Activities data
+ */
+export const getGlobalActivities = async (options = {}) => {
+  try {
+    const { filter = 'all', page = 1, limit = 20, token } = options;
+
+    const queryParams = new URLSearchParams({
+      filter,
+      page,
+      limit
+    });
+
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/discussions/activities?${queryParams}`,
+      {
+        method: 'GET',
+        headers
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching global activities:', error);
+    throw error;
+  }
+};
+
 export default {
   getSlideDiscussion,
   getSlideComments,
   createComment,
   deleteComment,
+  getSlidesList,
   getDiscussionTopics,
   getDiscussionActivities,
-  searchComments
+  searchComments,
+  rateSlide,
+  rateSlidePagee,
+  getGlobalActivities
 };

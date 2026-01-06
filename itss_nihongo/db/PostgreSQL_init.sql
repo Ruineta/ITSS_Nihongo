@@ -39,6 +39,8 @@ CREATE TABLE slides (
     difficulty_level VARCHAR(50), -- 難易度レベル (フィルタ用: 例 'N1', '上級')
     difficulty_score INT DEFAULT 0 CHECK (difficulty_score BETWEEN 0 AND 100), -- 難解度スコア (ランキング用 0-100点)
     view_count INT DEFAULT 0, -- 閲覧数 (人気順フィルタ用)
+    page_count INT DEFAULT 0, -- ページ数 (PPTXの場合はスライド数)
+    avg_rating DECIMAL(3, 2) DEFAULT 0.00, -- 平均評価 (星1-5)
     is_public BOOLEAN DEFAULT TRUE, -- 公開フラグ
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 投稿日時
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 更新日時
@@ -87,6 +89,8 @@ CREATE TABLE slide_comments (
     user_id INT REFERENCES users(id) ON DELETE CASCADE, -- 投稿者
     content TEXT NOT NULL, -- コメント内容
     type VARCHAR(20) DEFAULT 'comment' CHECK (type IN ('comment', 'proposal')), -- 種類: 通常コメント or 指導案の提案
+    page_index INT DEFAULT NULL, -- ページインデックス (NULLは全体へのコメント)
+    rating INT CHECK (rating BETWEEN 1 AND 5), -- 評価 (1-5)
     parent_id INT REFERENCES slide_comments(id), -- 返信機能用 (親コメントID)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- 投稿日時
 );
@@ -112,12 +116,12 @@ CREATE TABLE slide_likes (
 );
 
 -- 11. ノウハウへのリアクションテーブル (Know_How_Reactions)
--- 機能: 記事に対する多様な感情表現 (Backlog No.3 - 'Thích', 'Hữu ích'等)
+-- 機能: 記事に対する多様な感情表現 (Backlog No.3 - 絵文字リアクション対応)
 CREATE TABLE know_how_reactions (
     user_id INT REFERENCES users(id) ON DELETE CASCADE, -- ユーザー
     article_id INT REFERENCES know_how_articles(id) ON DELETE CASCADE, -- 対象記事
-    reaction_type VARCHAR(20) NOT NULL CHECK (reaction_type IN ('like', 'useful', 'thanks', 'empathy')), 
-    -- reaction_type: 'like'(いいね), 'useful'(役立つ), 'thanks'(ありがとう), 'empathy'(共感)
+    reaction_type VARCHAR(20) NOT NULL CHECK (reaction_type IN ('love', 'like', 'haha', 'wow', 'sad', 'angry')), 
+    -- reaction_type: 'love'(❤️), 'like'(👍), 'haha'(😂), 'wow'(😲), 'sad'(😢), 'angry'(😠)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, article_id) -- 1ユーザーにつき1記事1リアクション (変更可能だが重複不可とする設計)
 );
@@ -130,22 +134,50 @@ CREATE TABLE difficulty_analysis_points (
     point_description TEXT NOT NULL -- 難解理由 (例: "専門用語が多すぎる", "数式が複雑")
 );
 
+-- 12. スライド評価テーブル (Slide_Ratings) - 全体評価
 CREATE TABLE slide_ratings (
-                               id SERIAL PRIMARY KEY,
-                               slide_id INTEGER NOT NULL REFERENCES slides(id) ON DELETE CASCADE,
-                               user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                               difficulty_score INTEGER NOT NULL CHECK (difficulty_score >= 0 AND difficulty_score <= 100),
-                               feedback TEXT,
-                               created_at TIMESTAMP DEFAULT NOW(),
-                               updated_at TIMESTAMP DEFAULT NOW(),
-                               UNIQUE(slide_id, user_id)
+    id SERIAL PRIMARY KEY,
+    slide_id INTEGER NOT NULL REFERENCES slides(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rating_points INTEGER NOT NULL CHECK (rating_points >= 0 AND rating_points <= 5), -- 星評価 (0-5)
+    difficulty_score INTEGER NOT NULL CHECK (difficulty_score >= 0 AND difficulty_score <= 100), -- 難解度スコア (0-100)
+    feedback TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(slide_id, user_id)
 );
 
-CREATE INDEX idx_slide_ratings_slide_id ON slide_ratings(slide_id);
-CREATE INDEX idx_slide_ratings_user_id ON slide_ratings(user_id);
+-- 13. スライドページ評価テーブル (Slide_Page_Ratings) - ページ別評価
+CREATE TABLE slide_page_ratings (
+    id SERIAL PRIMARY KEY,
+    slide_id INTEGER NOT NULL REFERENCES slides(id) ON DELETE CASCADE,
+    page_index INTEGER NOT NULL, -- ページインデックス (0から始まる)
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rating_points INTEGER NOT NULL CHECK (rating_points >= 0 AND rating_points <= 5), -- 星評価 (0-5)
+    feedback TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(slide_id, page_index, user_id)
+);
+
+-- 14. スライドコメント評価テーブル (Slide_Comment_Ratings)
+CREATE TABLE slide_comment_ratings (
+    id SERIAL PRIMARY KEY,
+    comment_id INTEGER REFERENCES slide_comments(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(comment_id, user_id)
+);
 
 -- インデックス作成 (パフォーマンス最適化)
 CREATE INDEX idx_slides_subject ON slides(subject_id); -- 科目検索用
 CREATE INDEX idx_slides_title ON slides(title); -- タイトル検索用
 CREATE INDEX idx_slides_difficulty_score ON slides(difficulty_score DESC); -- 難解ランキング生成用
-CREATE INDEX idx_knowhow_reactions_type ON know_how_reactions(reaction_type); -- リアクション種別集計用
+CREATE INDEX idx_slide_ratings_slide_id ON slide_ratings(slide_id);
+CREATE INDEX idx_slide_ratings_user_id ON slide_ratings(user_id);
+CREATE INDEX idx_slide_page_ratings_slide_id ON slide_page_ratings(slide_id);
+CREATE INDEX idx_slide_page_ratings_page_index ON slide_page_ratings(page_index);
+CREATE INDEX idx_know_how_reactions_article_type ON know_how_reactions(article_id, reaction_type); -- リアクション種別集計用
+CREATE INDEX idx_slide_comments_slide_id ON slide_comments(slide_id); -- スライドコメント検索用
+CREATE INDEX idx_slide_comments_page_index ON slide_comments(page_index); -- ページインデックス検索用

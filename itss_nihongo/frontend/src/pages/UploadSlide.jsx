@@ -1,11 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getSubjects } from "../services/slideService";
+import { useAuth } from "../contexts/AuthContext";
 import Header from "../components/Header";
 import Navigation from "../components/Navigation";
 
 const UploadSlide = () => {
+    const { token } = useAuth();
     const [dragActive, setDragActive] = useState(false);
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [subjectName, setSubjectName] = useState('');
+    const [difficulty, setDifficulty] = useState('初級');
+    const [tags, setTags] = useState([]);
+    const [tagInput, setTagInput] = useState('');
+    // const [subjects, setSubjects] = useState([]); // No longer needed for text input
+
+    // useEffect(() => {
+    //     // Removed subject fetching since we use text input now
+    // }, []);
 
     const handleDrag = (e) => {
         e.preventDefault();
@@ -34,8 +47,8 @@ const UploadSlide = () => {
     };
 
     const isValidFile = (file) => {
-        const validTypes = ['application/pdf', 'application/vnd.ms-powerpoint', 
-                          'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+        const validTypes = ['application/pdf', 'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
         const maxSize = 10 * 1024 * 1024; // 10MB
         return validTypes.includes(file.type) && file.size <= maxSize;
     };
@@ -57,22 +70,43 @@ const UploadSlide = () => {
     };
 
     const handleSubmit = async () => {
-        if (!file || !title) {
-            alert('ファイルとタイトルを入力してください');
+        console.log('Submit State:', {
+            file: !!file,
+            title,
+            subjectName
+        });
+
+        if (!file) {
+            alert('ファイルをアップロードしてください');
+            return;
+        }
+        if (!title.trim()) {
+            alert('タイトルを入力してください');
+            return;
+        }
+        if (!subjectName.trim()) {
+            alert('科目を入力してください');
             return;
         }
 
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', title);
-        // Add other fields as needed
-        // formData.append('description', 'This is a test description');
-        // formData.append('subject_id', 1);
-        // formData.append('difficulty_level', '初級');
+        formData.append('description', description);
+        formData.append('subject_name', subjectName);
+        formData.append('difficulty_level', difficulty);
+        tags.forEach(tag => formData.append('tags[]', tag));
+
+        // Alternatively, if backend expects JSON for tags in multipart/form-data (uncommon but possible), or simple form fields.
+        // Let's assume standard array handling 'tags[]' works with the backend middleware (likely multer).
+
 
         try {
-            const response = await fetch('http://localhost:5001/api/slides/upload', {
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/slides/upload`, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData,
             });
 
@@ -83,6 +117,10 @@ const UploadSlide = () => {
                 // リセット
                 setFile(null);
                 setTitle('');
+                setDescription('');
+                setTags([]);
+                setTagInput('');
+                setSubjectName('');
             } else {
                 alert(`エラー: ${data.message}`);
             }
@@ -116,7 +154,7 @@ const UploadSlide = () => {
                         <label className="block text-sm font-semibold text-gray-900 mb-4">
                             ファイルをアップロード
                             <p className="text-gray-500 text-base">
-                            外国人生徒にとって理解しにくいスライドをアップロードしてください
+                                外国人生徒にとって理解しにくいスライドをアップロードしてください
                             </p>
                         </label>
                         <div
@@ -124,11 +162,10 @@ const UploadSlide = () => {
                             onDragLeave={handleDrag}
                             onDragOver={handleDrag}
                             onDrop={handleDrop}
-                            className={`border-2 border-dashed rounded-lg p-12 text-center transition-all ${
-                                dragActive
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-gray-300 bg-gray-50'
-                            }`}
+                            className={`border-2 border-dashed rounded-lg p-12 text-center transition-all ${dragActive
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-300 bg-gray-50'
+                                }`}
                         >
                             {file ? (
                                 <div className="flex flex-col items-center">
@@ -174,6 +211,8 @@ const UploadSlide = () => {
                         </div>
                     </div>
 
+
+
                     {/* Title Input */}
                     <div className="mb-6">
                         <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -188,6 +227,89 @@ const UploadSlide = () => {
                         />
                     </div>
 
+                    {/* Description Input */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            説明
+                        </label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="スライドの内容や特徴を簡単に説明してください"
+                            rows="4"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        />
+                    </div>
+
+                    <div className="flex gap-6 mb-6">
+                        {/* Subject Select */}
+                        <div className="flex-1">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                科目<span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={subjectName}
+                                onChange={(e) => setSubjectName(e.target.value)}
+                                placeholder="科目を入力 (例: 数学)"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            />
+                        </div>
+
+                        {/* Difficulty Select */}
+                        <div className="flex-1">
+                            <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                難易度
+                            </label>
+                            <select
+                                value={difficulty}
+                                onChange={(e) => setDifficulty(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+                            >
+                                <option value="初級">初級</option>
+                                <option value="中級">中級</option>
+                                <option value="上級">上級</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Tags Input */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                            タグ
+                        </label>
+                        <div className="flex flex-wrap gap-2 mb-2 p-2 border border-gray-300 rounded-lg min-h-[50px] bg-white">
+                            {tags.map((tag, index) => (
+                                <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+                                    {tag}
+                                    <button
+                                        onClick={() => setTags(tags.filter((_, i) => i !== index))}
+                                        className="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ))}
+                            <input
+                                type="text"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+                                            setTags([...tags, tagInput.trim()]);
+                                            setTagInput('');
+                                        }
+                                    }
+                                }}
+                                placeholder={tags.length === 0 ? "タグを入力してEnter (例: テスト対策, 2024)" : ""}
+                                className="flex-1 outline-none min-w-[200px]"
+                            />
+                        </div>
+                        <p className="text-xs text-gray-500">Enterキーでタグを追加できます</p>
+                    </div>
+
                     {/* Submit Button */}
                     <div className="flex gap-4 pt-4 border-t border-gray-200">
                         <button
@@ -200,6 +322,9 @@ const UploadSlide = () => {
                             onClick={() => {
                                 setFile(null);
                                 setTitle('');
+                                setDescription('');
+                                setTags([]);
+                                setTagInput('');
                             }}
                             className="flex-1 bg-gray-200 text-gray-900 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
                         >
@@ -210,6 +335,7 @@ const UploadSlide = () => {
 
 
             </div>
+
         </div>
     );
 };

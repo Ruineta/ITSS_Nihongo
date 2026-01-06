@@ -1,5 +1,4 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/authMiddleware.js';
 import {
   getSlideComments,
   createComment,
@@ -7,15 +6,39 @@ import {
   deleteComment,
   getDiscussionTopics,
   getDiscussionActivities,
-  searchComments
+  searchComments,
+  getSlidesList,
+  rateSlide,
+  rateSlidePage,
+  getGlobalActivities
 } from '../controllers/discussionController.js';
+import { authenticateToken, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 /**
- * Discussion Routes
  * Base path: /api/discussions
  */
+
+/**
+ * GET /api/discussions/activities
+ * Get global activities
+ * Query params:
+ *   - limit: Items per page
+ *   - page: Page number
+ *   - filter: 'all', 'comment', 'reply', 'mine'
+ */
+router.get('/activities', optionalAuth, getGlobalActivities);
+
+/**
+ * GET /api/discussions/slides
+ * Get all slides with ratings for discussion listing
+ * Query params:
+ *   - page: Page number (default: 1)
+ *   - limit: Items per page (default: 20)
+ *   - sortBy: 'newest', 'mostCommented', 'highestRated' (default: 'newest')
+ */
+router.get('/slides', getSlidesList);
 
 /**
  * GET /api/discussions/slides/:slideId
@@ -75,5 +98,26 @@ router.get('/slides/:slideId/activities', getDiscussionActivities);
  *   - limit: Items per page (default: 20)
  */
 router.get('/slides/:slideId/comments/search', searchComments);
+
+/**
+ * POST /api/discussions/slides/:slideId/rate
+ * Rate a slide overall
+ * Body:
+ *   - userId: Current user ID (required)
+ *   - ratingPoints: Star rating (0-5) (required)
+ *   - difficultyScore: Difficulty score (0-100)
+ *   - feedback: Optional feedback text
+ */
+router.post('/slides/:slideId/rate', authenticateToken, rateSlide);
+
+/**
+ * POST /api/discussions/slides/:slideId/pages/:pageIndex/rate
+ * Rate a specific page in a slide
+ * Body:
+ *   - userId: Current user ID (required)
+ *   - ratingPoints: Star rating (0-5) (required)
+ *   - feedback: Optional feedback text
+ */
+router.post('/slides/:slideId/pages/:pageIndex/rate', authenticateToken, rateSlidePage);
 
 export default router;

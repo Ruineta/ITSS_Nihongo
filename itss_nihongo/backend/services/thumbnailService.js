@@ -36,16 +36,16 @@ export async function generatePdfThumbnail(pdfPath, outputPath) {
     // Method 1: Using GraphicsMagick (if installed)
     // Install: choco install graphicsmagick (Windows) or brew install graphicsmagick (Mac)
     const command = `gm convert -density 150 "${pdfPath}[0]" -resize ${THUMBNAIL_WIDTH}x${THUMBNAIL_HEIGHT} -quality 85 "${outputPath}"`;
-    
+
     await execPromise(command);
     return outputPath;
   } catch (error) {
     console.error('GraphicsMagick thumbnail generation failed:', error.message);
-    
+
     try {
       // Method 2: Fallback to ImageMagick
       const command = `convert -density 150 "${pdfPath}[0]" -resize ${THUMBNAIL_WIDTH}x${THUMBNAIL_HEIGHT} -quality 85 "${outputPath}"`;
-      
+
       await execPromise(command);
       return outputPath;
     } catch (fallbackError) {
@@ -64,23 +64,23 @@ export async function generatePdfThumbnail(pdfPath, outputPath) {
 export async function generatePptxThumbnail(pptxPath, outputPath) {
   try {
     const tempDir = path.dirname(outputPath);
-    
+
     // Convert first page to PDF using LibreOffice
     // Install: choco install libreoffice (Windows) or brew install libreoffice (Mac)
     const convertCommand = `soffice --headless --convert-to pdf --outdir "${tempDir}" "${pptxPath}"`;
     await execPromise(convertCommand);
-    
+
     // Get the generated PDF path
     const pdfPath = outputPath.replace(/\.\w+$/, '.pdf');
-    
+
     // Convert PDF to image
     await generatePdfThumbnail(pdfPath, outputPath);
-    
+
     // Clean up temporary PDF
     if (fs.existsSync(pdfPath)) {
       fs.unlinkSync(pdfPath);
     }
-    
+
     return outputPath;
   } catch (error) {
     console.error('PPTX thumbnail generation failed:', error.message);
@@ -98,27 +98,27 @@ export async function generatePptxThumbnail(pptxPath, outputPath) {
 export async function generateSlideThumbnail(filePath, fileType, slideId) {
   const filename = `slide_${slideId}_thumbnail.jpg`;
   const outputPath = path.join(THUMBNAIL_DIR, filename);
-  
+
   try {
     let thumbnailPath;
-    
+
     switch (fileType.toLowerCase()) {
       case 'pdf':
         thumbnailPath = await generatePdfThumbnail(filePath, outputPath);
         break;
-      
+
       case 'pptx':
       case 'ppt':
         thumbnailPath = await generatePptxThumbnail(filePath, outputPath);
         break;
-      
+
       default:
         throw new Error(`Unsupported file type: ${fileType}`);
     }
-    
+
     // Generate URL (adjust based on your server configuration)
     const thumbnailUrl = `/uploads/thumbnails/${filename}`;
-    
+
     return {
       path: thumbnailPath,
       url: thumbnailUrl,
@@ -126,7 +126,7 @@ export async function generateSlideThumbnail(filePath, fileType, slideId) {
     };
   } catch (error) {
     console.error('Thumbnail generation error:', error);
-    
+
     // Return placeholder as fallback
     const placeholderUrl = generatePlaceholderUrl(fileType);
     return {
@@ -149,9 +149,9 @@ function generatePlaceholderUrl(fileType) {
     pptx: '50C878',
     ppt: 'FF6B6B'
   };
-  
-  const color = colors[fileType] || '9B59B6';
-  return `https://via.placeholder.com/${THUMBNAIL_WIDTH}x${THUMBNAIL_HEIGHT}/${color}/ffffff?text=${fileType.toUpperCase()}+Slide`;
+
+  // Return local default thumbnail instead of external service
+  return '/default-slide-thumbnail.png';
 }
 
 /**
@@ -160,7 +160,7 @@ function generatePlaceholderUrl(fileType) {
  */
 export function deleteThumbnail(filename) {
   if (!filename) return;
-  
+
   const filePath = path.join(THUMBNAIL_DIR, filename);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
@@ -177,28 +177,28 @@ export async function checkThumbnailTools() {
     imageMagick: false,
     libreOffice: false
   };
-  
+
   try {
     await execPromise('gm version');
     tools.graphicsMagick = true;
   } catch (e) {
     // Not installed
   }
-  
+
   try {
     await execPromise('convert -version');
     tools.imageMagick = true;
   } catch (e) {
     // Not installed
   }
-  
+
   try {
     await execPromise('soffice --version');
     tools.libreOffice = true;
   } catch (e) {
     // Not installed
   }
-  
+
   return tools;
 }
 

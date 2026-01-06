@@ -16,7 +16,7 @@ export const fetchUserProfile = async () => {
     }
 
     const data = await response.json();
-    return data.data; // Trả về data.data vì backend trả về { success: true, data: {...} }
+    return data.data.user; // Trả về data.data.user vì backend trả về { success: true, data: { user: {...} } }
   } catch (error) {
     console.error('Error fetching user profile:', error);
     throw error;
