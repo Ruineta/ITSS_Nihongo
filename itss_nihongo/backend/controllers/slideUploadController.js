@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
-import { generateSlideThumbnail } from '../services/thumbnailService.js';
+// import { generateSlideThumbnail } from '../services/thumbnailService.js'; // Removed
+
 import { countPptxSlides, countPdfPages } from '../services/pageCountService.js';
 import path from 'path';
 import fs from 'fs';
@@ -125,31 +126,12 @@ export const uploadSlide = async (req, res) => {
 
     const slideId = insertResult.rows[0].id;
 
-    // Generate thumbnail
-    let thumbnailUrl = null;
-    try {
-      const thumbnailResult = await generateSlideThumbnail(
-        req.file.path,
-        fileType,
-        slideId
-      );
-
-      thumbnailUrl = thumbnailResult.url;
-
-      // Update slide with thumbnail URL
-      await query(
-        'UPDATE slides SET thumbnail_url = $1 WHERE id = $2',
-        [thumbnailUrl, slideId]
-      );
-    } catch (thumbnailError) {
-      console.error('Thumbnail generation failed:', thumbnailError);
-      // Fallback to default thumbnail
-      thumbnailUrl = '/uploads/default-slide-thumbnail.png';
-      await query(
-        'UPDATE slides SET thumbnail_url = $1 WHERE id = $2',
-        [thumbnailUrl, slideId]
-      );
-    }
+    // Generate thumbnail (Simplified: Always use default)
+    const thumbnailUrl = '/uploads/default-slide-thumbnail.png';
+    await query(
+      'UPDATE slides SET thumbnail_url = $1 WHERE id = $2',
+      [thumbnailUrl, slideId]
+    );
 
     // Handle tags if provided
     if (tags && tags.length > 0) {
