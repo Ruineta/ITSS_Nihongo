@@ -8,7 +8,7 @@ import slideRankingRoutes from './routes/slideRankingRoutes.js';
 import slideSearchRoutes from './routes/slideSearchRoutes.js';
 import slideUploadRoutes from './routes/slideUploadRoutes.js';
 import discussionRoutes from './routes/discussionRoutes.js';
-import systemRoutes from './routes/systemRoutes.js';
+// import systemRoutes from './routes/systemRoutes.js'; // Removed
 import knowhowRoutes from './routes/knowhowRoutes.js';
 import userProfileRoutes from './routes/userProfileRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -123,7 +123,7 @@ app.use('/api/knowhow', knowhowRoutes);
 app.use('/api/users', userProfileRoutes);
 
 // Mount system routes
-app.use('/api/system', systemRoutes);
+// app.use('/api/system', systemRoutes); // Removed
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
