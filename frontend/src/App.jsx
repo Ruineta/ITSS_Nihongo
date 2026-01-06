@@ -9,6 +9,7 @@ import SlideSearch from './pages/SlideSearch';
 import SlideDiscussion from './pages/SlideDiscussion';
 import DiscussionList from './pages/DiscussionList';
 import Profile from './pages/Profile';
+import PublicProfile from './pages/PublicProfile';
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
           <Route path='/discussion/:slideId' element={<SlideDiscussion />} />
           {/* <Route path='/ranking' element={<SlideRanking />} /> */}
           <Route path='/profile' element={<Profile />} />
+          <Route path='/user/:userId' element={<PublicProfile />} />
         </Routes>
       </div>
     </AuthProvider>

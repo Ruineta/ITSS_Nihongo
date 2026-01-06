@@ -157,6 +157,7 @@ export const searchSlides = async (req, res) => {
         s.avg_rating,
         s.created_at,
         s.updated_at,
+        u.id as author_id,
         u.full_name as author,
         u.school_name as university,
         sub.name as subject_name,
@@ -202,7 +203,7 @@ export const searchSlides = async (req, res) => {
       fileUrl: row.file_url,
       fileType: row.file_type ? row.file_type.toUpperCase() : 'PDF',
       fileSize: getFileSizeLocal(row.file_url),
-      avgRating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : "0.0",
+      avgRating: row.difficulty_score || 0,
       thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
     }));
 
@@ -323,7 +324,7 @@ export const getSlideById = async (req, res) => {
         difficultyPoints: row.difficulty_points,
         fileUrl: row.file_url,
         fileType: row.file_type,
-        avgRating: row.avg_rating ? parseFloat(row.avg_rating).toFixed(1) : "0.0",
+        avgRating: row.difficulty_score || 0,
         thumbnail: row.thumbnail_url || generateThumbnailUrl(row.file_url, row.file_type)
       }
     });
@@ -583,6 +584,52 @@ export const getLikeStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to get like status'
+    });
+  }
+};
+
+
+/**
+ * Get all difficulty ratings for a slide
+ * @route GET /api/slides/:id/ratings
+ */
+export const getSlideRatings = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ratingsQuery = `
+      SELECT 
+        sr.id,
+        sr.difficulty_score,
+        sr.feedback,
+        sr.created_at,
+        u.full_name as author,
+        u.avatar_url
+      FROM slide_ratings sr
+      LEFT JOIN users u ON sr.user_id = u.id
+      WHERE sr.slide_id = $1 AND sr.difficulty_score > 0
+      ORDER BY sr.created_at DESC
+    `;
+
+    const result = await query(ratingsQuery, [id]);
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows.map(row => ({
+        id: row.id,
+        difficultyScore: row.difficulty_score,
+        feedback: row.feedback,
+        author: row.author || '匿名',
+        avatar: row.avatar_url,
+        timestamp: row.created_at
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error in getSlideRatings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ratings'
     });
   }
 };

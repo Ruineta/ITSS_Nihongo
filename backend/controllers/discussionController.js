@@ -481,6 +481,7 @@ export const getSlideDiscussion = async (req, res) => {
           title: slideData.title,
           description: slideData.description,
           author: slideData.author || '匿名',
+          authorId: slideData.author_id,
           university: slideData.university || '',
           subject: slideData.subject_name,
           difficulty: slideData.difficulty_level,

@@ -91,7 +91,7 @@ export const getSlideComments = async (slideId, options = {}) => {
  */
 export const createComment = async (slideId, commentData) => {
   try {
-    const { content, type = 'comment', userId, token, pageIndex, rating } = commentData;
+    const { content, type = 'comment', userId, token, pageIndex, rating, parentId } = commentData;
 
     // Validation
     if (!content || !content.trim()) {
@@ -123,7 +123,8 @@ export const createComment = async (slideId, commentData) => {
           type,
           userId,
           pageIndex,
-          rating
+          rating,
+          parentId
         })
       }
     );

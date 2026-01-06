@@ -9,6 +9,7 @@ import {
   createComment,
   getDiscussionActivities // Assuming we might want to show recent activities in sidebar? Or just focused on page.
 } from "../services/discussionService";
+import { getSlideRatings } from "../services/slideService";
 
 const SlideDiscussion = () => {
   const { slideId: paramSlideId } = useParams();
@@ -20,17 +21,19 @@ const SlideDiscussion = () => {
   const [slide, setSlide] = useState(null);
   const [comments, setComments] = useState([]);
   const [pageComments, setPageComments] = useState({}); // Cache for page comments
+  const [pageCommentCounts, setPageCommentCounts] = useState({}); // Comment counts per page
+  const [ratings, setRatings] = useState([]); // Difficulty ratings
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // UI State
   const [selectedPageIndex, setSelectedPageIndex] = useState(1); // 1-based index for UI
+  const [activeTab, setActiveTab] = useState('comments'); // 'comments' or 'ratings'
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [newCommentText, setNewCommentText] = useState("");
   const [collapsedComments, setCollapsedComments] = useState(new Set());
   const [likedComments, setLikedComments] = useState(new Set()); // Mock like state for UI demo
-  const [newCommentRating, setNewCommentRating] = useState(0); // Rating state
   const [imgError, setImgError] = useState(false); // Image error state
 
   useEffect(() => {
@@ -50,8 +53,15 @@ const SlideDiscussion = () => {
       const response = await getSlideDiscussion(slideId);
       if (response.success) {
         setSlide(response.data.slide);
+        const totalPages = response.data.slide.pageCount || 1;
+
+        // Fetch comment counts for all pages
+        await fetchAllPageCommentCounts(totalPages);
+
         // Initial fetch for page 1
         await fetchCommentsForPage(1);
+        // Fetch ratings
+        await fetchRatings();
       } else {
         setError(response.message || "スライド情報の取得に失敗しました");
       }
@@ -60,6 +70,39 @@ const SlideDiscussion = () => {
       setError("エラーが発生しました");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRatings = async () => {
+    try {
+      const response = await getSlideRatings(slideId);
+      if (response.success) {
+        setRatings(response.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch ratings", err);
+    }
+  };
+
+  const fetchAllPageCommentCounts = async (totalPages) => {
+    try {
+      // Fetch comment count for each page
+      const counts = {};
+      for (let page = 1; page <= totalPages; page++) {
+        const response = await getSlideComments(slideId, {
+          page: 1, limit: 100, pageIndex: page
+        });
+        if (response.success) {
+          // Count total including replies
+          const totalCount = response.data.reduce((total, comment) => {
+            return total + 1 + (comment.replies?.length || 0);
+          }, 0);
+          counts[page] = totalCount;
+        }
+      }
+      setPageCommentCounts(counts);
+    } catch (err) {
+      console.error("Failed to fetch page comment counts", err);
     }
   };
 
@@ -84,6 +127,14 @@ const SlideDiscussion = () => {
           ...prev,
           [page]: response.data
         }));
+        // Update comment count for this page - include replies
+        const totalCount = response.data.reduce((total, comment) => {
+          return total + 1 + (comment.replies?.length || 0);
+        }, 0);
+        setPageCommentCounts(prev => ({
+          ...prev,
+          [page]: totalCount
+        }));
       }
     } catch (err) {
       console.error("Failed to fetch page comments", err);
@@ -98,12 +149,10 @@ const SlideDiscussion = () => {
         type: 'comment',
         userId: user?.id,
         token,
-        pageIndex: selectedPageIndex,
-        rating: newCommentRating || null
+        pageIndex: selectedPageIndex
       });
       if (response.success) {
         setNewCommentText("");
-        setNewCommentRating(0);
         // Refresh comments
         fetchCommentsForPage(selectedPageIndex);
       }
@@ -230,132 +279,215 @@ const SlideDiscussion = () => {
             )}
           </div>
 
-          <div className="flex justify-center gap-10 p-6 bg-[#f8f9fa] rounded-lg mb-8">
-            <div className="text-center">
-              <div className="text-[13px] text-[#666] mb-1">コメント</div>
-              <div className="text-2xl font-bold text-[#1a1a1a]">{currentComments.length}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-[13px] text-[#666] mb-1">評価</div>
-              <div className="text-2xl font-bold text-[#1a1a1a]">{slide.avgRating ? Number(slide.avgRating).toFixed(1) : "0.0"} <span className="text-yellow-400">⭐</span></div>
-            </div>
+          {/* Tab Navigation */}
+          <div className="flex gap-4 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('comments')}
+              className={`pb-3 px-4 font-semibold transition-colors ${activeTab === 'comments'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
+            >
+              討論内容 ({pageCommentCounts[selectedPageIndex] || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab('ratings')}
+              className={`pb-3 px-4 font-semibold transition-colors ${activeTab === 'ratings'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
+            >
+              難易度評価 ({ratings.length})
+            </button>
           </div>
 
           {/* Comments Section */}
-          <div className="mt-10">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold text-[#1a1a1a]">討論内容</h2>
-                <span className="text-base text-[#666]">({currentComments.length}件)</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {currentComments.length === 0 ? (
-                <div className="text-center py-10 text-gray-400 text-sm">
-                  このページにはまだコメントがありません。<br />最初のコメントを投稿しましょう！
+          {activeTab === 'comments' && (
+            <div className="mt-10">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold text-[#1a1a1a]">討論内容</h2>
+                  <span className="text-base text-[#666]">({pageCommentCounts[selectedPageIndex] || 0}件)</span>
                 </div>
-              ) : (
-                currentComments.map(comment => (
-                  <div key={comment.id} className={`bg-[#f8f9fa] rounded-lg p-5 transition-all ${collapsedComments.has(comment.id) ? '' : ''}`}>
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-semibold text-[#1a1a1a] text-[15px]">{comment.author || "匿名"}</span>
-                        {/* Rating Display */}
-                        {comment.rating > 0 && (
-                          <span className="text-yellow-400 text-sm ml-1">
-                            {"★".repeat(comment.rating)}
-                            <span className="text-gray-300">{"★".repeat(5 - comment.rating)}</span>
-                          </span>
+              </div>
+
+              <div className="space-y-4">
+                {currentComments.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400 text-sm">
+                    このページにはまだコメントがありません。<br />最初のコメントを投稿しましょう！
+                  </div>
+                ) : (
+                  currentComments.map(comment => (
+                    <div key={comment.id} className={`bg-[#f8f9fa] rounded-lg p-5 transition-all ${collapsedComments.has(comment.id) ? '' : ''}`}>
+
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2.5">
+                          {/* Avatar & Name - Clickable */}
+                          <div
+                            className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (comment.userId) navigate(`/user/${comment.userId}`);
+                            }}
+                          >
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 flex-shrink-0">
+                              {(comment.author || "U")[0].toUpperCase()}
+                            </div>
+                            <span className="font-semibold text-[#1a1a1a] text-[15px] hover:underline">
+                              {comment.author || "匿名"}
+                            </span>
+                          </div>
+
+                          {comment.userId && slide?.authorId && comment.userId === slide.authorId && (
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                              作者
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[13px] text-[#999]">{comment.timestamp}</span>
+                      </div>
+
+                      <div className="ml-0 md:ml-0">
+                        <div className="text-[#333] text-sm leading-relaxed mb-3 whitespace-pre-wrap text-left">{comment.content}</div>
+
+                        {/* Reply Button */}
+                        <button
+                          onClick={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium mb-2"
+                        >
+                          {activeReplyId === comment.id ? 'キャンセル' : '返信'}
+                        </button>
+
+                        {/* Reply Form */}
+                        {activeReplyId === comment.id && (
+                          <div className="bg-white border border-[#e0e0e0] rounded-lg p-4 mt-3 mb-3 animate-fadeIn">
+                            <textarea
+                              className="w-full p-2.5 border border-[#e0e0e0] rounded-md text-[13px] min-h-[80px] focus:outline-none focus:border-blue-500 mb-2.5"
+                              placeholder="返信を入力..."
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                            ></textarea>
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => setActiveReplyId(null)}
+                                className="px-4 py-1.5 rounded-md text-[13px] font-medium bg-[#f3f4f6] text-[#666] hover:bg-[#e5e7eb]"
+                              >キャンセル</button>
+                              <button
+                                onClick={() => handleReplySubmit(comment.id)}
+                                className="px-4 py-1.5 rounded-md text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600"
+                              >返信を投稿</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Replies List */}
+                        {comment.replies && comment.replies.length > 0 && (
+                          <div className="mt-4 pl-5 border-l-2 border-[#e5e7eb] space-y-3">
+                            {comment.replies.map(reply => (
+                              <div key={reply.id} className="bg-white border border-[#e5e7eb] rounded-lg p-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <div className="flex items-center gap-2">
+                                    {/* Avatar & Name - Clickable */}
+                                    <div
+                                      className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (reply.userId) navigate(`/user/${reply.userId}`);
+                                      }}
+                                    >
+                                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-semibold text-blue-600 flex-shrink-0">
+                                        {(reply.author || "U")[0].toUpperCase()}
+                                      </div>
+                                      <span className="font-semibold text-[#1a1a1a] text-sm hover:underline">{reply.author}</span>
+                                    </div>
+
+                                    {reply.userId && slide?.authorId && reply.userId === slide.authorId && (
+                                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                                        作者
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-xs text-[#999]">{reply.timestamp}</span>
+                                </div>
+                                <div className="text-[#333] text-sm mb-2">{reply.content}</div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      <span className="text-[13px] text-[#999]">{comment.timestamp}</span>
+
                     </div>
+                  ))
+                )}
+              </div>
 
-                    <div className="ml-0 md:ml-0">
-                      <div className="text-[#333] text-sm leading-relaxed mb-3 whitespace-pre-wrap text-left">{comment.content}</div>
-
-                      {/* Reply Form Removed */}
-
-                      {/* Reply Form */}
-                      {activeReplyId === comment.id && (
-                        <div className="bg-white border border-[#e0e0e0] rounded-lg p-4 mt-3 mb-3 animate-fadeIn">
-                          <textarea
-                            className="w-full p-2.5 border border-[#e0e0e0] rounded-md text-[13px] min-h-[80px] focus:outline-none focus:border-blue-500 mb-2.5"
-                            placeholder="返信を入力..."
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                          ></textarea>
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => setActiveReplyId(null)}
-                              className="px-4 py-1.5 rounded-md text-[13px] font-medium bg-[#f3f4f6] text-[#666] hover:bg-[#e5e7eb]"
-                            >キャンセル</button>
-                            <button
-                              onClick={() => handleReplySubmit(comment.id)}
-                              className="px-4 py-1.5 rounded-md text-[13px] font-medium bg-blue-500 text-white hover:bg-blue-600"
-                            >返信を投稿</button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Replies List */}
-                      {comment.replies && comment.replies.length > 0 && (
-                        <div className="mt-4 pl-5 border-l-2 border-[#e5e7eb] space-y-3">
-                          {comment.replies.map(reply => (
-                            <div key={reply.id} className="bg-white border border-[#e5e7eb] rounded-lg p-4">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="font-semibold text-[#1a1a1a] text-sm">{reply.author}</span>
-                                <span className="text-xs text-[#999]">{reply.timestamp}</span>
-                              </div>
-                              <div className="text-[#333] text-sm mb-2">{reply.content}</div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* New Comment Section */}
-            <div className="mt-8 bg-white border border-[#e0e0e0] rounded-xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">新しいコメント</h3>
-                {/* Rating Input */}
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setNewCommentRating(star)}
-                      className={`text-xl transition-colors ${star <= newCommentRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'}`}
-                    >
-                      ★
-                    </button>
-                  ))}
+              <div className="mt-8 bg-white border border-[#e0e0e0] rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4">新しいコメント</h3>
+                <textarea
+                  className="w-full p-4 border border-[#e0e0e0] rounded-lg text-sm min-h-[120px] focus:outline-none focus:border-blue-500 mb-4"
+                  placeholder={`ページ ${selectedPageIndex} について質問や改善案を入力...`}
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                ></textarea>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => setNewCommentText("")}
+                    className="px-6 py-2.5 rounded-md text-sm font-semibold bg-[#f3f4f6] text-[#666] hover:bg-[#e5e7eb]"
+                  >キャンセル</button>
+                  <button
+                    onClick={handlePostComment}
+                    className="px-6 py-2.5 rounded-md text-sm font-semibold bg-blue-500 text-white hover:bg-blue-600"
+                  >コメント投稿</button>
                 </div>
               </div>
-              <textarea
-                className="w-full p-4 border border-[#e0e0e0] rounded-lg text-sm min-h-[120px] focus:outline-none focus:border-blue-500 mb-4"
-                placeholder={`ページ ${selectedPageIndex} について質問や改善案を入力...`}
-                value={newCommentText}
-                onChange={(e) => setNewCommentText(e.target.value)}
-              ></textarea>
-              <div className="flex gap-2.5">
-                <button
-                  onClick={() => setNewCommentText("")}
-                  className="px-6 py-2.5 rounded-md text-sm font-semibold bg-[#f3f4f6] text-[#666] hover:bg-[#e5e7eb]"
-                >キャンセル</button>
-                <button
-                  onClick={handlePostComment}
-                  className="px-6 py-2.5 rounded-md text-sm font-semibold bg-blue-500 text-white hover:bg-blue-600"
-                >コメント投稿</button>
-              </div>
-            </div>
 
-          </div>
+            </div>
+          )}
+
+          {/* Ratings Section */}
+          {activeTab === 'ratings' && (
+            <div className="mt-10">
+              <h2 className="text-xl font-semibold text-[#1a1a1a] mb-5">難易度評価 ({ratings.length}件)</h2>
+
+              {ratings.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-sm">
+                  まだ評価がありません
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {ratings.map(rating => (
+                    <div key={rating.id} className="bg-[#f8f9fa] rounded-lg p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[#1a1a1a]">{rating.author}</span>
+                            {rating.userId === slide.authorId && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                                作者
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">難易度スコア:</span>
+                            <span className="text-2xl font-bold text-blue-600">{rating.difficultyScore}</span>
+                            <span className="text-sm text-gray-500">/ 100</span>
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(rating.timestamp).toLocaleDateString('ja-JP')}
+                        </span>
+                      </div>
+                      {rating.feedback && (
+                        <div className="mt-3 p-3 bg-white rounded border border-gray-200">
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">{rating.feedback}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -363,11 +495,9 @@ const SlideDiscussion = () => {
           <h3 className="text-base font-semibold text-[#333] mb-4">ページ一覧</h3>
           <div className="flex flex-col gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-              // Logic to check if this page has comments?
-              // Ideally we have a map of counts: {1: 5, 2: 0...}.
-              // For now we don't have that map without fetching all.
-              // We can just show "Page X".
               const isActive = pageNum === selectedPageIndex;
+              const pageCommentsCount = pageCommentCounts[pageNum] || 0;
+
               return (
                 <div
                   key={pageNum}
@@ -379,8 +509,7 @@ const SlideDiscussion = () => {
                 >
                   <span className="font-semibold text-sm">ページ {pageNum}</span>
                   <span className={`text-xs flex items-center gap-1 ${isActive ? 'text-white/90' : 'text-[#666]'}`}>
-                    {/* Placeholder comment count if we had it */}
-                    💬
+                    💬 {pageCommentsCount}
                   </span>
                 </div>
               );

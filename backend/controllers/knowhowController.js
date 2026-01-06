@@ -12,7 +12,7 @@ import { query, getClient } from '../config/database.js';
  */
 const validateArticleInput = (body) => {
   const errors = [];
-  
+
   // Validate title
   if (!body.title || typeof body.title !== 'string') {
     errors.push('Title is required and must be a string');
@@ -21,14 +21,14 @@ const validateArticleInput = (body) => {
   } else if (body.title.length > 100) {
     errors.push('Title must be 100 characters or less');
   }
-  
+
   // Validate content
   if (!body.content || typeof body.content !== 'string') {
     errors.push('Content is required and must be a string');
   } else if (body.content.trim().length === 0) {
     errors.push('Content cannot be empty');
   }
-  
+
   // Validate tags (optional)
   if (body.tags !== undefined) {
     if (!Array.isArray(body.tags)) {
@@ -46,7 +46,7 @@ const validateArticleInput = (body) => {
       }
     }
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors
@@ -81,24 +81,24 @@ const processTags = async (articleId, tags, client) => {
   if (!tags || tags.length === 0) {
     return;
   }
-  
+
   for (const tagName of tags) {
     const normalizedName = normalizeTagName(tagName);
-    
+
     if (normalizedName.length === 0) {
       // Skip empty tags after normalization
       continue;
     }
-    
+
     try {
       // Insert tag if it doesn't exist, or get existing tag
       const tagResult = await client.query(
         'INSERT INTO tags (name, type) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET name = $1 RETURNING id',
         [normalizedName, 'keyword']
       );
-      
+
       const tagId = tagResult.rows[0].id;
-      
+
       // Link tag to article
       await client.query(
         'INSERT INTO know_how_tags (article_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -125,7 +125,7 @@ const processTags = async (articleId, tags, client) => {
 export const postArticle = async (req, res) => {
   try {
     const { title, content, tags = [], is_public = true } = req.body;
-    
+
     // Get user ID from JWT token (set by authenticateToken middleware)
     const userId = req.user?.userId || req.user?.id;
     if (!userId) {
@@ -134,7 +134,7 @@ export const postArticle = async (req, res) => {
         message: 'User authentication required'
       });
     }
-    
+
     // Validate input
     const validation = validateArticleInput({ title, content, tags });
     if (!validation.isValid) {
@@ -144,38 +144,38 @@ export const postArticle = async (req, res) => {
         errors: validation.errors
       });
     }
-    
+
     // Get database client for transaction
     const client = await getClient();
-    
+
     try {
       await client.query('BEGIN');
-      
+
       // Insert article
       const insertQuery = `
         INSERT INTO know_how_articles (user_id, title, content, is_public)
         VALUES ($1, $2, $3, $4)
         RETURNING id, created_at, updated_at
       `;
-      
+
       const insertResult = await client.query(insertQuery, [
         userId,
         title.trim(),
         content.trim(),
         is_public
       ]);
-      
+
       const articleId = insertResult.rows[0].id;
       const createdAt = insertResult.rows[0].created_at;
       const updatedAt = insertResult.rows[0].updated_at;
-      
+
       // Process tags
       if (tags && tags.length > 0) {
         await processTags(articleId, tags, client);
       }
-      
+
       await client.query('COMMIT');
-      
+
       // Fetch complete article data with tags
       const articleQuery = `
         SELECT 
@@ -200,10 +200,10 @@ export const postArticle = async (req, res) => {
         WHERE ka.id = $1
         GROUP BY ka.id, u.id
       `;
-      
+
       const articleResult = await query(articleQuery, [articleId]);
       const article = articleResult.rows[0];
-      
+
       return res.status(201).json({
         success: true,
         message: 'Article posted successfully',
@@ -219,7 +219,7 @@ export const postArticle = async (req, res) => {
           updatedAt: article.updated_at
         }
       });
-      
+
     } catch (transactionError) {
       await client.query('ROLLBACK');
       console.error('Transaction error:', transactionError);
@@ -227,10 +227,10 @@ export const postArticle = async (req, res) => {
     } finally {
       client.release();
     }
-    
+
   } catch (error) {
     console.error('Error posting article:', error);
-    
+
     return res.status(500).json({
       success: false,
       message: 'Failed to post article',
@@ -249,14 +249,14 @@ export const postArticle = async (req, res) => {
 export const getArticle = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id || isNaN(id)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid article ID'
       });
     }
-    
+
     const articleQuery = `
       SELECT 
         ka.id,
@@ -282,18 +282,18 @@ export const getArticle = async (req, res) => {
       WHERE ka.id = $1
       GROUP BY ka.id, u.id
     `;
-    
+
     const result = await query(articleQuery, [id]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Article not found'
       });
     }
-    
+
     const article = result.rows[0];
-    
+
     return res.status(200).json({
       success: true,
       data: {
@@ -310,10 +310,10 @@ export const getArticle = async (req, res) => {
         updatedAt: article.updated_at
       }
     });
-    
+
   } catch (error) {
     console.error('Error fetching article:', error);
-    
+
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch article',
@@ -336,40 +336,40 @@ export const getArticle = async (req, res) => {
 export const getArticles = async (req, res) => {
   try {
     const { page = 1, limit = 10, tag, author, user_id } = req.query;
-    
+
     // Validate pagination parameters
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
     const offset = (pageNum - 1) * limitNum;
-    
+
     // Build WHERE clause based on filters
     let whereConditions = ['ka.is_public = true'];
     let queryParams = [];
     let paramIndex = 1;
-    
+
     // Filter by tag
     if (tag && tag.trim()) {
       whereConditions.push(`LOWER(t.name) LIKE LOWER($${paramIndex})`);
       queryParams.push(`%${tag.trim()}%`);
       paramIndex++;
     }
-    
+
     // Filter by author name
     if (author && author.trim()) {
       whereConditions.push(`LOWER(u.full_name) LIKE LOWER($${paramIndex})`);
       queryParams.push(`%${author.trim()}%`);
       paramIndex++;
     }
-    
+
     // Filter by user_id
     if (user_id && !isNaN(user_id)) {
       whereConditions.push(`ka.user_id = $${paramIndex}`);
       queryParams.push(parseInt(user_id));
       paramIndex++;
     }
-    
+
     const whereClause = 'WHERE ' + whereConditions.join(' AND ');
-    
+
     // Get total count
     const countQuery = `
       SELECT COUNT(DISTINCT ka.id) as total
@@ -379,11 +379,11 @@ export const getArticles = async (req, res) => {
       LEFT JOIN tags t ON kht.tag_id = t.id
       ${whereClause}
     `;
-    
+
     const countResult = await query(countQuery, queryParams);
     const total = parseInt(countResult.rows[0].total) || 0;
     const totalPages = Math.ceil(total / limitNum);
-    
+
     // Get articles with pagination
     const articlesQuery = `
       SELECT 
@@ -393,6 +393,7 @@ export const getArticles = async (req, res) => {
         ka.is_public,
         ka.created_at,
         ka.updated_at,
+        u.id as user_id,
         u.full_name as author,
         u.school_name as school,
         COALESCE(
@@ -411,15 +412,16 @@ export const getArticles = async (req, res) => {
       ORDER BY ka.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-    
+
     queryParams.push(limitNum, offset);
-    
+
     const articlesResult = await query(articlesQuery, queryParams);
-    
+
     const articles = articlesResult.rows.map(article => ({
       id: article.id,
       title: article.title,
       content: article.content,
+      userId: article.user_id,
       author: article.author,
       school: article.school,
       isPublic: article.is_public,
@@ -428,7 +430,7 @@ export const getArticles = async (req, res) => {
       createdAt: article.created_at,
       updatedAt: article.updated_at
     }));
-    
+
     return res.status(200).json({
       success: true,
       data: articles,
@@ -440,10 +442,10 @@ export const getArticles = async (req, res) => {
         hasNextPage: pageNum < totalPages
       }
     });
-    
+
   } catch (error) {
     console.error('Error fetching articles:', error);
-    
+
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch articles',
@@ -852,14 +854,14 @@ export const addReaction = async (req, res) => {
 
     if (existingReaction.rows.length > 0) {
       const existing = existingReaction.rows[0];
-      
+
       // If same reaction type, remove it
       if (existing.reaction_type === reaction_type) {
         await query(
           'DELETE FROM know_how_reactions WHERE user_id = $1 AND article_id = $2',
           [userId, articleId]
         );
-        
+
         return res.status(200).json({
           success: true,
           message: 'Reaction removed',
@@ -874,7 +876,7 @@ export const addReaction = async (req, res) => {
           'UPDATE know_how_reactions SET reaction_type = $1 WHERE user_id = $2 AND article_id = $3',
           [reaction_type, userId, articleId]
         );
-        
+
         return res.status(200).json({
           success: true,
           message: 'Reaction updated',
@@ -890,7 +892,7 @@ export const addReaction = async (req, res) => {
         'INSERT INTO know_how_reactions (user_id, article_id, reaction_type) VALUES ($1, $2, $3)',
         [userId, articleId, reaction_type]
       );
-      
+
       return res.status(201).json({
         success: true,
         message: 'Reaction added',

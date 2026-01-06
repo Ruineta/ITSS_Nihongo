@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SlideCard = ({ slide, onClick }) => {
+    const navigate = useNavigate();
     const {
         thumbnail,
         title,
         author,
+        author_id, // Ensure this is destructured
         university,
         uploadDate,
         tags,
@@ -15,6 +18,17 @@ const SlideCard = ({ slide, onClick }) => {
 
     const [imgError, setImgError] = useState(false);
     const displayThumbnail = imgError ? `${process.env.REACT_APP_BACKEND_URL}/uploads/default-slide-thumbnail.png` : (thumbnail || `${process.env.REACT_APP_BACKEND_URL}/uploads/default-slide-thumbnail.png`);
+
+    // ... (keep helper functions)
+
+    const handleAuthorClick = (e) => {
+        e.stopPropagation();
+        if (author_id) {
+            navigate(`/user/${author_id}`);
+        }
+    };
+
+
 
     // Màu sắc cho difficulty level
     const getDifficultyColor = (level) => {
@@ -73,14 +87,26 @@ const SlideCard = ({ slide, onClick }) => {
                     {title}
                 </h3>
 
-                {/* Author info - without circle */}
-                <div className="mb-3">
-                    <p className="text-sm text-left font-medium text-gray-700">
-                        {author || '匿名'}
-                    </p>
-                    <p className="text-sm text-left text-gray-500">
-                        {university || '大学名'}
-                    </p>
+                {/* Author info - with avatar */}
+                <div className="mb-3 flex items-center gap-2">
+                    <div
+                        className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-600 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={handleAuthorClick}
+                        title={author || '匿名'}
+                    >
+                        {(author || "U")[0].toUpperCase()}
+                    </div>
+                    <div
+                        className="cursor-pointer group"
+                        onClick={handleAuthorClick}
+                    >
+                        <p className="text-sm text-left font-medium text-gray-700 group-hover:text-blue-600 group-hover:underline transition-colors">
+                            {author || '匿名'}
+                        </p>
+                        <p className="text-sm text-left text-gray-500">
+                            {university || '大学名'}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Tags with different colors */}
@@ -107,21 +133,19 @@ const SlideCard = ({ slide, onClick }) => {
                     <span>
                         アップロード: {uploadDate || '2021年4月18日'}
                     </span>
-                    {/* Rating and Comment count */}
+                    {/* Comment count */}
                     <div className="flex items-center gap-3">
-                        {/* Rating */}
-                        <div className="flex items-center gap-1 text-yellow-500">
-                            <span className="text-xs font-bold">{slide.avgRating ? Number(slide.avgRating).toFixed(1) : "0.0"}</span>
-                            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                            </svg>
+                        {/* Rating Score (0-100) */}
+                        <div className="flex items-center gap-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
+                            <span className="text-xs font-bold">Score:</span>
+                            <span className="text-sm font-bold">{slide.avgRating || "0"}</span>
                         </div>
                         {/* Comment count */}
-                        <div className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex items-center gap-1 text-gray-500">
+                            <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
-                            <span>{comments || slide.commentCount || 0}</span>
+                            <span className="text-xs">{comments || slide.commentCount || 0}</span>
                         </div>
                     </div>
                 </div>

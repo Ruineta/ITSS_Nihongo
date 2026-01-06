@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
 import PostCard from '../components/PostCard';
@@ -33,18 +33,19 @@ const ExpShare = () => {
         try {
             setLoadingPosts(true);
             setError(null);
-            
-            const response = await knowhowService.getArticles({ 
-                page, 
+
+            const response = await knowhowService.getArticles({
+                page,
                 limit: 10,
                 tag: tag || undefined,
                 author: author || undefined,
                 userId: userIdFilter ? parseInt(userIdFilter) : undefined
             });
-            
+
             // Transform API response to match PostCard format
             const transformedPosts = response.data.map(article => ({
                 id: article.id,
+                userId: article.userId, // Add userId
                 avatar: article.author ? article.author[0].toUpperCase() : 'U',
                 title: article.title,
                 author: article.author || 'ユーザー',
@@ -55,7 +56,7 @@ const ExpShare = () => {
                 comments: article.commentCount || 0,
                 createdAt: article.createdAt
             }));
-            
+
             setPosts(transformedPosts);
             setCurrentPage(response.pagination.page);
             setTotalPages(response.pagination.totalPages);
@@ -139,7 +140,7 @@ const ExpShare = () => {
 
             // Refresh posts list
             await fetchArticles(1);
-            
+
             // Reset form and close modal
             setShowAddPostModal(false);
             setNewPostData({
@@ -172,10 +173,10 @@ const ExpShare = () => {
     };
 
     const handleInputChange = (field, value) => {
-        setNewPostData({...newPostData, [field]: value});
+        setNewPostData({ ...newPostData, [field]: value });
     };
 
-    return(
+    return (
         <div className="min-h-screen bg-gray-100">
             {/* Header */}
             <Header onLogout={handleLogout} />
@@ -250,7 +251,7 @@ const ExpShare = () => {
                             {posts.map((post) => (
                                 <PostCard key={post.id} post={post} />
                             ))}
-                            
+
                             {/* Pagination */}
                             <div className="flex justify-center items-center gap-3 mt-8">
                                 <button
@@ -260,11 +261,11 @@ const ExpShare = () => {
                                 >
                                     前へ
                                 </button>
-                                
+
                                 <span className="text-gray-600">
                                     ページ {currentPage} / {totalPages}
                                 </span>
-                                
+
                                 <button
                                     onClick={() => fetchArticles(currentPage + 1, searchTag, searchAuthor)}
                                     disabled={currentPage >= totalPages}
@@ -283,14 +284,14 @@ const ExpShare = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-semibold mb-6">新しいノウハウを投稿</h2>
-                        
+
                         {error && (
                             <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
                                 <p className="font-semibold">エラー</p>
                                 <p>{error}</p>
                             </div>
                         )}
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2">タイトル *</label>

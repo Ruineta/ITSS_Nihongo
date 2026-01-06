@@ -7,7 +7,8 @@ import {
   rateSlide,
   likeSlide,
   unlikeSlide,
-  getLikeStatus
+  getLikeStatus,
+  getSlideRatings
 } from '../controllers/slideSearchController.js';
 import {
   validateSearchParams,
@@ -90,5 +91,12 @@ router.delete('/:id/like', authenticateToken, validateSlideId, unlikeSlide);
  * @access  Public (Optional Auth)
  */
 router.get('/:id/like', optionalAuth, validateSlideId, getLikeStatus);
+
+/**
+ * @route   GET /api/slides/:id/ratings
+ * @desc    Get all difficulty ratings for a slide
+ * @access  Public
+ */
+router.get('/:id/ratings', validateSlideId, getSlideRatings);
 
 export default router;

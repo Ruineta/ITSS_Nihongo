@@ -143,10 +143,12 @@ export const getSlideById = async (id) => {
  */
 export const rateSlide = async (id, difficultyScore, feedback) => {
     try {
+        const token = localStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/slides/${id}/rate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
             },
             body: JSON.stringify({
                 difficultyScore,
@@ -322,10 +324,12 @@ export const unlikeSlide = async (id) => {
  */
 export const getLikeStatus = async (id) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/slides/${id}/like-status`, {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/like`, { // Endpoint matches backend route: /:id/like
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
             },
         });
 
@@ -349,6 +353,40 @@ export const getLikeStatus = async (id) => {
     }
 };
 
+/**
+ * Get all difficulty ratings for a slide
+ * @param {number} id - Slide ID
+ * @returns {Promise<Object>}
+ */
+export const getSlideRatings = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/slides/${id}/ratings`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('評価の取得に失敗しました');
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.message || '評価の取得に失敗しました');
+        }
+
+        return {
+            success: true,
+            data: result.data,
+        };
+    } catch (error) {
+        console.error('Error fetching slide ratings:', error);
+        throw error;
+    }
+};
+
 const slideService = {
     searchSlides,
     getSlideById,
@@ -357,7 +395,8 @@ const slideService = {
     getPopularTags,
     likeSlide,
     unlikeSlide,
-    getLikeStatus
+    getLikeStatus,
+    getSlideRatings
 };
 
 export default slideService;

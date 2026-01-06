@@ -296,6 +296,213 @@ export const getUserStats = async (req, res) => {
 };
 
 /**
+ * Get public user profile by ID
+ */
+export const getPublicUserProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const queryText = `
+      SELECT 
+        u.id, 
+        u.email, 
+        u.full_name, 
+        u.school_name, 
+        u.specialization, 
+        u.years_of_experience,
+        u.created_at
+      FROM users u
+      WHERE u.id = $1
+    `;
+
+    const result = await query(queryText, [userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const user = result.rows[0];
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email, // Depending on privacy, maybe hide email
+        fullName: user.full_name,
+        schoolName: user.school_name,
+        specialization: user.specialization,
+        yearsOfExperience: user.years_of_experience,
+        createdAt: user.created_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching public user profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user profile'
+    });
+  }
+};
+
+/**
+ * Get public user activities by ID
+ */
+export const getPublicUserActivities = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 20 } = req.query;
+
+    // Query to get all activities (uploads, slide comments, know-how comments)
+    // Same as getUserActivities but using param userId instead of req.user
+    const activitiesQuery = `
+      -- Slide uploads
+      SELECT 
+        'upload' as type,
+        s.id as item_id,
+        s.title,
+        s.created_at as timestamp,
+        NULL as content
+      FROM slides s
+      WHERE s.user_id = $1
+
+      UNION ALL
+
+      -- Slide comments
+      SELECT 
+        'slide_comment' as type,
+        sc.slide_id as item_id,
+        s.title,
+        sc.created_at as timestamp,
+        sc.content
+      FROM slide_comments sc
+      JOIN slides s ON sc.slide_id = s.id
+      WHERE sc.user_id = $1
+
+      UNION ALL
+
+      -- Know-how comments
+      SELECT 
+        'knowhow_comment' as type,
+        kc.article_id as item_id,
+        ka.title,
+        kc.created_at as timestamp,
+        kc.content
+      FROM know_how_comments kc
+      JOIN know_how_articles ka ON kc.article_id = ka.id
+      WHERE kc.user_id = $1
+
+       UNION ALL
+
+      -- Know-how posts
+      SELECT 
+        'knowhow_post' as type,
+        ka.id as item_id,
+        ka.title,
+        ka.created_at as timestamp,
+        NULL as content
+      FROM know_how_articles ka
+      WHERE ka.user_id = $1
+
+      ORDER BY timestamp DESC
+      LIMIT $2
+    `;
+
+    const result = await query(activitiesQuery, [userId, limit]);
+
+    // Format activities
+    const activities = result.rows.map(row => ({
+      type: row.type,
+      itemId: row.item_id,
+      title: row.title,
+      content: row.content,
+      timestamp: row.timestamp
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: activities
+    });
+
+  } catch (error) {
+    console.error('Error fetching public user activities:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch activities'
+    });
+  }
+};
+
+/**
+ * Get public user stats by ID
+ */
+export const getPublicUserStats = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // 1. Count slides uploaded
+    const slidesQuery = 'SELECT COUNT(*) FROM slides WHERE user_id = $1';
+    const slidesResult = await query(slidesQuery, [userId]);
+    const slidesCount = parseInt(slidesResult.rows[0].count);
+
+    // 2. Count know-how articles posted
+    const articlesQuery = 'SELECT COUNT(*) FROM know_how_articles WHERE user_id = $1';
+    const articlesResult = await query(articlesQuery, [userId]);
+    const articlesCount = parseInt(articlesResult.rows[0].count);
+
+    // 3. Count comments posted (slides + know-how)
+    const slideCommentsQuery = 'SELECT COUNT(*) FROM slide_comments WHERE user_id = $1';
+    const slideCommentsResult = await query(slideCommentsQuery, [userId]);
+
+    const knowhowCommentsQuery = 'SELECT COUNT(*) FROM know_how_comments WHERE user_id = $1';
+    const knowhowCommentsResult = await query(knowhowCommentsQuery, [userId]);
+
+    const totalComments = parseInt(slideCommentsResult.rows[0].count) + parseInt(knowhowCommentsResult.rows[0].count);
+
+    // 4. Count likes received (on slides + know-how)
+    // Likes on user's slides
+    const slideLikesQuery = `
+      SELECT COUNT(*) 
+      FROM slide_likes sl
+      JOIN slides s ON sl.slide_id = s.id
+      WHERE s.user_id = $1
+    `;
+    const slideLikesResult = await query(slideLikesQuery, [userId]);
+
+    // Likes on user's know-how articles
+    const articleLikesQuery = `
+      SELECT COUNT(*) 
+      FROM know_how_reactions kr
+      JOIN know_how_articles ka ON kr.article_id = ka.id
+      WHERE ka.user_id = $1
+    `;
+    const articleLikesResult = await query(articleLikesQuery, [userId]);
+
+    const totalLikes = parseInt(slideLikesResult.rows[0].count) + parseInt(articleLikesResult.rows[0].count);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        slidesUploaded: slidesCount,
+        articlesPosted: articlesCount,
+        commentsPosted: totalComments,
+        likesReceived: totalLikes
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching public user stats:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user stats'
+    });
+  }
+};
+
+/**
  * Get user activities (uploads, comments)
  * @route GET /api/auth/activities
  */

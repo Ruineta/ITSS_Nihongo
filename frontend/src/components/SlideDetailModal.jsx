@@ -132,6 +132,7 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
     thumbnail,
     title,
     author,
+    author_id, // Add author_id
     university,
     uploadDate,
     tags,
@@ -236,6 +237,7 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
 
 
               {/* Action buttons */}
+              {/* Action buttons */}
               <div className="flex gap-3">
                 <a
                   href={fullDownloadUrl}
@@ -267,8 +269,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                   onClick={handleLikeToggle}
                   disabled={isLiking}
                   className={`flex-1 font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm ${isLiked
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                     } ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <svg
@@ -310,7 +312,6 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                   </svg>
                   ディスカッション
                 </button>
-
               </div>
             </div>
 
@@ -319,11 +320,29 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
               {/* Author info */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-lg">
-                    {author ? author[0] : "U"}
+                  <div
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-lg cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (author_id) {
+                        navigate(`/user/${author_id}`);
+                        onClose();
+                      }
+                    }}
+                  >
+                    {author ? author[0].toUpperCase() : "U"}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">
+                    <h3
+                      className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 hover:underline transition-colors w-fit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (author_id) {
+                          navigate(`/user/${author_id}`);
+                          onClose();
+                        }
+                      }}
+                    >
                       {author || "匿名"}
                     </h3>
                     <p className="text-sm text-gray-600">
@@ -336,28 +355,19 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
 
               {/* Description */}
               <div>
-                <h3 className="font-semibold text-gray-800 mb-2">説明</h3>
-                <p className="text-gray-700 leading-relaxed">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-semibold text-gray-800 text-left">説明</h3>
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-md text-blue-600">
+                    <span className="text-xs font-bold uppercase tracking-wider">Score</span>
+                    <span className="font-bold text-lg">{avgRating || "0.0"}</span>
+                  </div>
+                </div>
+                <p className="text-gray-700 leading-relaxed text-left">
                   {description || "このスライドには説明がありません。"}
                 </p>
 
-                {/* Avg Rating & Rate Button */}
-                <div className="mt-4 flex items-center justify-between">
-                  {/* Avg Rating Display */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span key={star} className={`text-xl ${star <= (avgRating || 0) ? "text-yellow-400" : "text-gray-300"}`}>★</span>
-                      ))}
-                    </div>
-                    <span className="font-bold text-gray-800 text-lg">
-                      {avgRating ? Number(avgRating).toFixed(1) : "0.0"}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      ({slide.ratingCount || 0}件の評価)
-                    </span>
-                  </div>
-
+                {/* Rate Button */}
+                <div className="mt-4 flex justify-start"> {/* Changed justify-end to justify-start */}
                   <button
                     type="button"
                     onClick={() => setIsRatingOpen(true)}
@@ -371,8 +381,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
               {/* Tags */}
               {tags && tags.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-2">タグ</h3>
-                  <div className="flex flex-wrap gap-2">
+                  <h3 className="font-semibold text-gray-800 mb-2 text-left">タグ</h3>
+                  <div className="flex flex-wrap gap-2 justify-start"> {/* Added justify-start */}
                     {tags.map((tag, index) => (
                       <span
                         key={index}
@@ -491,22 +501,6 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                           {comment.content}
                         </p>
 
-                        {/* Rating */}
-                        {comment.rating > 0 && (
-                          <div className="ml-11 flex items-center gap-1 mb-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <span
-                                key={star}
-                                className={`text-sm ${star <= comment.rating
-                                  ? "text-yellow-400"
-                                  : "text-gray-300"
-                                  }`}
-                              >
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -534,9 +528,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
             </div>
           </div>
         </div>
-      </div>
 
-      <style>{`
+        <style>{`
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -552,83 +545,84 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
         }
       `}</style>
 
-      {/* Rating Modal (inside detail modal) */}
-      {isRatingOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          {/* Backdrop for rating modal only */}
-          <div
-            className="absolute inset-0 bg-black bg-opacity-40"
-            onClick={() => setIsRatingOpen(false)}
-          />
+        {/* Rating Modal (inside detail modal) */}
+        {isRatingOpen && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center">
+            {/* Backdrop for rating modal only */}
+            <div
+              className="absolute inset-0 bg-black bg-opacity-40"
+              onClick={() => setIsRatingOpen(false)}
+            />
 
-          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              このスライドを評価してください
-            </h3>
+            <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                このスライドを評価してください
+              </h3>
 
-            {/* Score slider */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">難易度スコア:</span>
-                <span className="text-2xl font-bold text-gray-800">
-                  {ratingScore}/100
-                </span>
+              {/* Score slider */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">難易度スコア:</span>
+                  <span className="text-2xl font-bold text-gray-800">
+                    {ratingScore}/100
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={ratingScore}
+                  onChange={(e) => setRatingScore(Number(e.target.value))}
+                  className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>簡単</span>
+                  <span>普通</span>
+                  <span>難しい</span>
+                  <span>非常に難しい</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={ratingScore}
-                onChange={(e) => setRatingScore(Number(e.target.value))}
-                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>簡単</span>
-                <span>普通</span>
-                <span>難しい</span>
-                <span>非常に難しい</span>
+
+              {/* Feedback textarea */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-600 mb-2">
+                  フィードバック (任意):
+                </label>
+                <textarea
+                  value={ratingFeedback}
+                  onChange={(e) => setRatingFeedback(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  placeholder="このスライドについてのご意見をお聞かせください..."
+                />
               </div>
-            </div>
 
-            {/* Feedback textarea */}
-            <div className="mb-4">
-              <label className="block text-sm text-gray-600 mb-2">
-                フィードバック (任意):
-              </label>
-              <textarea
-                value={ratingFeedback}
-                onChange={(e) => setRatingFeedback(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="このスライドについてのご意見をお聞かせください..."
-              />
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsRatingOpen(false)}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-              >
-                キャンセル
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (onRate) {
-                    await onRate(slide.id, ratingScore, ratingFeedback);
-                  }
-                  setIsRatingOpen(false);
-                }}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
-              >
-                評価を送信
-              </button>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsRatingOpen(false)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (onRate) {
+                      await onRate(slide.id, ratingScore, ratingFeedback);
+                    }
+                    setIsRatingOpen(false);
+                  }}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
+                >
+                  評価を送信
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </div >
   );
 };
 

@@ -3,9 +3,12 @@ import {
     register, login,
     getCurrentUser,
     getUserStats,
-    getUserActivities
+    getUserActivities,
+    getPublicUserProfile,
+    getPublicUserActivities,
+    getPublicUserStats
 } from '../controllers/authController.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -50,5 +53,10 @@ router.get('/stats', authenticateToken, getUserStats);
  * @access  Private (requires authentication)
  */
 router.get('/activities', authenticateToken, getUserActivities);
+
+// Public user profile routes
+router.get('/users/:userId/profile', optionalAuth, getPublicUserProfile);
+router.get('/users/:userId/activities', optionalAuth, getPublicUserActivities);
+router.get('/users/:userId/stats', optionalAuth, getPublicUserStats);
 
 export default router;
