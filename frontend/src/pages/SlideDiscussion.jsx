@@ -409,7 +409,7 @@ const SlideDiscussion = () => {
                                   </div>
                                   <span className="text-xs text-[#999]">{reply.timestamp}</span>
                                 </div>
-                                <div className="text-[#333] text-sm mb-2">{reply.content}</div>
+                                <div className="text-[#333] text-sm mb-2 text-left">{reply.content}</div>
                               </div>
                             ))}
                           </div>

@@ -132,7 +132,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
     thumbnail,
     title,
     author,
-    author_id, // Add author_id
+    author_id,
+    authorId, // Fallback field
     university,
     uploadDate,
     tags,
@@ -146,6 +147,12 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
     file_url,
     avgRating,  // Destructure average ID: 1422
   } = slide;
+
+  // Use author_id or authorId as fallback
+  const userId = author_id || authorId;
+
+  // Debug log
+  console.log('SlideDetailModal - author_id:', author_id, 'authorId:', authorId, 'userId:', userId);
 
   // Prioritize camelCase, fallback to snake_case
   const downloadUrl = fileUrl || file_url;
@@ -324,8 +331,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                     className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center font-bold text-lg cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (author_id) {
-                        navigate(`/user/${author_id}`);
+                      if (userId) {
+                        navigate(`/user/${userId}`);
                         onClose();
                       }
                     }}
@@ -337,8 +344,8 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                       className="font-semibold text-gray-800 cursor-pointer hover:text-blue-600 hover:underline transition-colors w-fit"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (author_id) {
-                          navigate(`/user/${author_id}`);
+                        if (userId) {
+                          navigate(`/user/${userId}`);
                           onClose();
                         }
                       }}
@@ -427,104 +434,7 @@ const SlideDetailModal = ({ slide, isOpen, onClose, onRate }) => {
                 </div>
               </div>
 
-              {/* Comments Section */}
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-                    />
-                  </svg>
-                  コメント ({slideComments.length})
-                </h3>
 
-                {/* Loading State */}
-                {loadingComments && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                  </div>
-                )}
-
-                {/* Error State */}
-                {commentError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-                    {commentError}
-                  </div>
-                )}
-
-                {/* Comments List */}
-                {!loadingComments && slideComments.length > 0 ? (
-                  <div className="space-y-3 max-h-48 overflow-y-auto">
-                    {slideComments.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className="bg-gray-50 p-3 rounded-lg border border-gray-100 hover:border-blue-200 transition"
-                      >
-                        {/* Comment Header */}
-                        <div className="flex items-start gap-3 mb-2">
-                          {/* Avatar */}
-                          <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            {comment.avatar ||
-                              (comment.author
-                                ? comment.author[0].toUpperCase()
-                                : "U")}
-                          </div>
-
-                          {/* Author Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <p className="text-sm font-semibold text-gray-800 truncate">
-                                {comment.author || "匿名"}
-                              </p>
-                              {comment.type === "proposal" && (
-                                <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full flex-shrink-0">
-                                  提案
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {comment.timestamp}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Comment Content */}
-                        <p className="text-sm text-gray-700 leading-relaxed mb-2 ml-11">
-                          {comment.content}
-                        </p>
-
-                      </div>
-                    ))}
-                  </div>
-                ) : !loadingComments ? (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-500">
-                      コメントはまだありません
-                    </p>
-                  </div>
-                ) : null}
-
-                {/* View All Comments Button */}
-                {slideComments.length > 0 && (
-                  <button
-                    onClick={() => {
-                      navigate(`/discussion/${slide.id}`);
-                      onClose();
-                    }}
-                    className="w-full mt-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium rounded-lg hover:bg-blue-50 transition"
-                  >
-                    すべてのコメントを表示 ({slideComments.length}+)
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>

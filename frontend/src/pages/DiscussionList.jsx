@@ -62,7 +62,7 @@ const ActivityItem = ({ activity, onClick }) => {
           📄 {activity.slideTitle}
         </div>
 
-        <div className="bg-gray-50 border-l-[3px] border-blue-500 p-3 rounded-r-md text-sm text-gray-700 leading-relaxed">
+        <div className="bg-gray-50 border-l-[3px] border-blue-500 p-3 rounded-r-md text-sm text-gray-700 leading-relaxed text-left">
           {activity.preview}
         </div>
 

@@ -203,7 +203,7 @@ export default function ProfessorProfile() {
         {/* Profile Card */}
         <div className="bg-white rounded-xl shadow-sm p-10 mb-5 flex flex-col md:flex-row items-start gap-8 relative">
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl text-white font-bold flex-shrink-0">
-            山
+            {profileForm.fullName ? profileForm.fullName[0].toUpperCase() : 'U'}
           </div>
 
           <div className="flex-1">

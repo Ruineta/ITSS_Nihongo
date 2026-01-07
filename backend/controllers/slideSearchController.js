@@ -191,6 +191,7 @@ export const searchSlides = async (req, res) => {
       title: row.title,
       description: row.description,
       author: row.author,
+      author_id: row.author_id, // Add author_id for profile navigation
       university: row.university || '未設定',
       uploadDate: formatDate(row.created_at),
       subject: row.subject_name,
@@ -307,7 +308,10 @@ export const getSlideById = async (req, res) => {
         id: row.id,
         title: row.title,
         description: row.description,
-        author: {
+        author_id: row.author_id, // Add for backward compatibility
+        author: row.author, // Author name as string for SlideDetailModal
+        university: row.university || '未設定', // University for SlideDetailModal
+        authorDetails: { // Nested object for future use
           id: row.author_id,
           name: row.author,
           university: row.university || '未設定',
